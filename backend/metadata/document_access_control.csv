@@ -1,0 +1,6 @@
+document_id,role,access_level
+1,HR,Full
+2,Employee,Read
+3,Engineer,Full
+4,Manager,Edit
+5,Admin,Full

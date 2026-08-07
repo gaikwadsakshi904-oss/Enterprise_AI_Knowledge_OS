@@ -1,0 +1,27 @@
+[
+  {
+    "instruction": "Answer employee questions using company documents.",
+    "input": "What is the leave policy?",
+    "output": "Employees receive 24 paid leaves annually."
+  },
+  {
+    "instruction": "Provide security related information.",
+    "input": "How can I protect company data?",
+    "output": "Follow security guidelines, use strong passwords and enable MFA."
+  },
+  {
+    "instruction": "Answer HR related queries.",
+    "input": "Who handles recruitment?",
+    "output": "The HR department handles recruitment activities."
+  },
+  {
+    "instruction": "Explain technical information.",
+    "input": "What is FAISS?",
+    "output": "FAISS is a vector similarity search library used for storing embeddings."
+  },
+  {
+    "instruction": "Answer IT support questions.",
+    "input": "How to reset password?",
+    "output": "Contact IT support for password reset assistance."
+  }
+]

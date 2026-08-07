@@ -1,0 +1,6 @@
+document_id,document_name,document_type,department,version
+1,company_policies.pdf,Policy,HR,1.0
+2,employee_handbook.pdf,Handbook,HR,1.0
+3,technical_manuals.pdf,Technical,Engineering,1.0
+4,project_documents.pdf,Project,Management,1.0
+5,security_guidelines.pdf,Security,IT,1.0

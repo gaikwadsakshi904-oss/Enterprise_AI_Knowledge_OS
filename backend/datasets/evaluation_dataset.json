@@ -1,0 +1,22 @@
+[
+  {
+    "query": "How many leaves can employees take?",
+    "expected_answer": "Employees receive 24 paid leaves annually."
+  },
+  {
+    "query": "Explain password reset process.",
+    "expected_answer": "Employees should contact IT support for password reset."
+  },
+  {
+    "query": "What are security rules?",
+    "expected_answer": "Use strong passwords and enable multi-factor authentication."
+  },
+  {
+    "query": "Who manages employee policies?",
+    "expected_answer": "HR department manages employee policies."
+  },
+  {
+    "query": "What technology stores document embeddings?",
+    "expected_answer": "FAISS vector database stores embeddings."
+  }
+]

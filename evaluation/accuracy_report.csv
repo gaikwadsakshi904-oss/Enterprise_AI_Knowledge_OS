@@ -1,0 +1,4 @@
+Model,Accuracy,Precision,Recall,F1-Score
+TF-IDF + Cosine Similarity,0.89,0.88,0.87,0.87
+Sentence Transformer,0.94,0.93,0.92,0.92
+FAISS Retrieval,0.96,0.95,0.94,0.94
