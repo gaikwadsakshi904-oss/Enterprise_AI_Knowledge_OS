@@ -3,57 +3,72 @@ import pandas as pd
 from pypdf import PdfReader
 
 
-class DocumentLoader:
+def load_documents(folder_path):
+    documents = []
 
-    def load_pdf(self, path):
-        text = ""
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
 
-        reader = PdfReader(path)
+    for filename in os.listdir(folder_path):
 
-        for page in reader.pages:
-            text += page.extract_text() + "\n"
+        file_path = os.path.join(folder_path, filename)
 
-        return text
+        # PDF files
+        if filename.lower().endswith(".pdf"):
+
+            try:
+                reader = PdfReader(file_path)
+
+                text = ""
+
+                for page in reader.pages:
+                    page_text = page.extract_text()
+
+                    if page_text:
+                        text += page_text + "\n"
+
+                if text.strip():
+                    documents.append(text)
+
+            except Exception as e:
+                print(f"Error reading PDF {filename}: {e}")
+
+        # TXT files
+        elif filename.lower().endswith(".txt"):
+
+            try:
+                with open(
+                    file_path,
+                    "r",
+                    encoding="utf-8"
+                ) as f:
+
+                    text = f.read()
+
+                if text.strip():
+                    documents.append(text)
+
+            except Exception as e:
+                print(f"Error reading TXT {filename}: {e}")
+
+    return documents
 
 
-    def load_txt(self, path):
+def split_documents(documents, chunk_size=500):
 
-        with open(path, "r", encoding="utf-8") as file:
-            return file.read()
+    chunks = []
 
+    for document in documents:
 
-    def load_csv(self, path):
+        words = document.split()
 
-        df = pd.read_csv(path)
+        for i in range(0, len(words), chunk_size):
 
-        return df.to_string(index=False)
-
-
-    def load_documents(self, folder):
-
-        documents = []
-
-        for file in os.listdir(folder):
-
-            path = os.path.join(folder, file)
-
-            if file.endswith(".pdf"):
-                text = self.load_pdf(path)
-
-            elif file.endswith(".txt"):
-                text = self.load_txt(path)
-
-            elif file.endswith(".csv"):
-                text = self.load_csv(path)
-
-            else:
-                continue
-
-            documents.append(
-                {
-                    "filename": file,
-                    "content": text
-                }
+            chunk = " ".join(
+                words[i:i + chunk_size]
             )
 
-        return documents
+            if chunk.strip():
+                chunks.append(chunk)
+
+    return chunks

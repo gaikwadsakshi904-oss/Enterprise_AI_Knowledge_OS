@@ -1,118 +1,168 @@
-import faiss
+import os
 import pickle
+import faiss
 import numpy as np
+
+
+def create_index(embeddings):
+    """
+    Create a FAISS index from embeddings.
+    """
+
+    embeddings = np.asarray(
+        embeddings,
+        dtype="float32"
+    )
+
+    if len(embeddings) == 0:
+        raise ValueError("No embeddings available")
+
+    dimension = embeddings.shape[1]
+
+    index = faiss.IndexFlatL2(
+        dimension
+    )
+
+    index.add(
+        embeddings
+    )
+
+    return index
+
+
+def save_index(index, file_path):
+    """
+    Save FAISS index to disk.
+    """
+
+    folder = os.path.dirname(file_path)
+
+    if folder:
+        os.makedirs(
+            folder,
+            exist_ok=True
+        )
+
+    faiss.write_index(
+        index,
+        file_path
+    )
+
+    print(
+        f"FAISS index saved: {file_path}"
+    )
+
+
+def load_index(file_path):
+    """
+    Load FAISS index from disk.
+    """
+
+    if not os.path.exists(file_path):
+        return None
+
+    index = faiss.read_index(
+        file_path
+    )
+
+    return index
+
+
+def search_index(index, query_embedding, k=3):
+    """
+    Search similar documents.
+    """
+
+    query_embedding = np.asarray(
+        [query_embedding],
+        dtype="float32"
+    )
+
+    distances, indices = index.search(
+        query_embedding,
+        k
+    )
+
+    return distances, indices
 
 
 class VectorStore:
 
-
-    def __init__(self, dimension):
+    def __init__(self, dimension=384):
 
         self.dimension = dimension
 
-        self.index = None
-
-        self.chunks = []
-
-
-
-    def create(self, embeddings, documents):
-
-        # Convert embeddings into numpy array
-
-        embeddings = np.array(
-            embeddings
-        ).astype("float32")
-
-
-        # Create FAISS index
-
         self.index = faiss.IndexFlatL2(
-            self.dimension
+            dimension
         )
 
+    def add(self, embeddings):
 
-        # Add vectors
+        embeddings = np.asarray(
+            embeddings,
+            dtype="float32"
+        )
 
         self.index.add(
             embeddings
         )
 
+    def search(
+        self,
+        query_embedding,
+        k=3
+    ):
 
-        # Store documents
-
-        self.chunks = documents
-
-
-
-    def save(self, index_path, chunks_path):
-
-        # Save FAISS index
-
-        faiss.write_index(
-            self.index,
-            index_path
+        query_embedding = np.asarray(
+            [query_embedding],
+            dtype="float32"
         )
-
-
-        # Save documents
-
-        with open(
-            chunks_path,
-            "wb"
-        ) as f:
-
-            pickle.dump(
-                self.chunks,
-                f
-            )
-
-
-        print("Vector store saved")
-
-
-
-    def load(self, index_path, chunks_path):
-
-        # Load FAISS index
-
-        self.index = faiss.read_index(
-            index_path
-        )
-
-
-        # Load documents
-
-        with open(
-            chunks_path,
-            "rb"
-        ) as f:
-
-            self.chunks = pickle.load(f)
-
-
-
-    def search(self, query_embedding, k=3):
-
-        query_embedding = np.array(
-            [query_embedding]
-        ).astype("float32")
-
 
         distances, indices = self.index.search(
             query_embedding,
             k
         )
 
+        return distances, indices
 
-        results = []
+    def save(
+        self,
+        file_path
+    ):
 
+        folder = os.path.dirname(
+            file_path
+        )
 
-        for idx in indices[0]:
-
-            results.append(
-                self.chunks[idx]
+        if folder:
+            os.makedirs(
+                folder,
+                exist_ok=True
             )
 
+        faiss.write_index(
+            self.index,
+            file_path
+        )
 
-        return results
+    def load(
+        self,
+        file_path,
+        chunks_file=None
+    ):
+
+        if os.path.exists(file_path):
+
+            self.index = faiss.read_index(
+                file_path
+            )
+
+            print(
+                "FAISS index loaded"
+            )
+
+        else:
+
+            print(
+                "FAISS index not found"
+            )
