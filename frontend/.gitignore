@@ -1,24 +1,47 @@
+# Python virtual environment
+venv/
+backend/venv/
+
+# Python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Environment files
+.env
+.env.*
+
+# HuggingFace cache
+.cache/
+**/.cache/
+
 # Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+logs/
+backend/logs/
 
-node_modules
-dist
-dist-ssr
-*.local
+# Model files
+*.bin
+*.safetensors
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Node.js
+node_modules/
+**/node_modules/
+
+# Node.js downloaded/generated files
+node.exe
+nodevars.bat
+npm
+npm.cmd
+npm.ps1
+npx
+npx.cmd
+npx.ps1
+corepack
+corepack.cmd
+install_tools.bat
+
+# Build files
+dist/
+build/
+.next/
