@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-dotenv
+google-genai
+pandas
+numpy
+scikit-learn
+sentence-transformers
+faiss-cpu
+pypdf
+python-docx
+transformers
+torch

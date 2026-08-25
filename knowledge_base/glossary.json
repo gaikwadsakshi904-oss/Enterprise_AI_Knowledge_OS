@@ -1,0 +1,26 @@
+[
+  {
+    "term": "RAG",
+    "definition": "Retrieval Augmented Generation is an AI technique that retrieves information from documents and generates accurate responses."
+  },
+  {
+    "term": "Embedding",
+    "definition": "An embedding is a numerical representation of text used for similarity search."
+  },
+  {
+    "term": "FAISS",
+    "definition": "FAISS is a vector database library used to perform fast similarity search."
+  },
+  {
+    "term": "Vector Database",
+    "definition": "A database that stores numerical representations of data for AI search applications."
+  },
+  {
+    "term": "LLM",
+    "definition": "Large Language Model used for understanding and generating human-like text."
+  },
+  {
+    "term": "API",
+    "definition": "Application Programming Interface allows communication between software systems."
+  }
+]

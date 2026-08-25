@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "question": "What is the employee leave policy?",
+    "context": "Employees are eligible for 24 paid leaves annually according to company HR policy.",
+    "answer": "Employees receive 24 paid leaves every year."
+  },
+  {
+    "id": 2,
+    "question": "How can employees reset their password?",
+    "context": "Password reset requests should be submitted to the IT support team.",
+    "answer": "Employees should contact IT support for password reset."
+  },
+  {
+    "id": 3,
+    "question": "What are the security guidelines?",
+    "context": "Employees must use strong passwords, enable multi-factor authentication, and protect company data.",
+    "answer": "Employees must follow security guidelines including strong passwords and MFA."
+  },
+  {
+    "id": 4,
+    "question": "What is the remote work policy?",
+    "context": "Remote work is allowed after approval from the reporting manager.",
+    "answer": "Employees can work remotely with manager approval."
+  },
+  {
+    "id": 5,
+    "question": "Who manages employee policies?",
+    "context": "The Human Resource department manages employee policies.",
+    "answer": "The HR department manages employee policies."
+  }
+]

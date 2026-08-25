@@ -1,0 +1,646 @@
+from typing import Dict, List
+
+from .planner import AgentPlanner
+from .research_agent import ResearchAgent
+from .risk_analyzer import RiskAnalyzer
+from .conflict_detector import ConflictDetector
+from .gap_detector import KnowledgeGapDetector
+from .critic import AgentCritic
+from .memory import InvestigationMemory
+from .remediation_agent import RemediationAgent
+from .shared_analyzer import SharedAnalyzer
+
+
+class AgentOrchestrator:
+
+    def __init__(self, rag_pipeline):
+
+        self.rag = rag_pipeline
+
+        self.research_agent = ResearchAgent(
+            rag_pipeline
+        )
+
+        self.planner = AgentPlanner(
+            rag_pipeline.llm
+        )
+
+        self.risk_analyzer = RiskAnalyzer(
+            rag_pipeline.llm
+        )
+
+        self.conflict_detector = ConflictDetector(
+            rag_pipeline.llm
+        )
+
+        self.gap_detector = KnowledgeGapDetector(
+            rag_pipeline.llm
+        )
+
+        self.shared_analyzer = SharedAnalyzer(
+            rag_pipeline.llm
+        )
+
+        self.critic = AgentCritic(
+            rag_pipeline.llm
+        )
+
+        self.memory = InvestigationMemory()
+
+        self.remediation_agent = RemediationAgent(
+            rag_pipeline.llm
+        )
+
+    # =====================================================
+    # INTENT CLASSIFICATION
+    # =====================================================
+
+    def classify(self, question: str) -> str:
+
+        question_lower = question.lower()
+
+        research_words = [
+            "analyze",
+            "analyse",
+            "compare",
+            "investigate",
+            "identify risks",
+            "find risks",
+            "conflicts",
+            "missing information",
+            "across documents",
+            "all documents",
+            "policy gaps",
+            "knowledge gaps",
+            "security risks",
+            "security controls",
+            "security policies",
+            "security",
+            "compliance risks",
+            "security controls",
+            "security control",
+            "security policy",
+            "security policies",
+            "controls",
+            "safeguards",
+            "security requirements",
+            "defined controls",
+        ]
+
+        for word in research_words:
+
+            if word in question_lower:
+                return "research"
+
+        return "standard"
+
+    # =====================================================
+    # AGENTIC RESEARCH
+    # =====================================================
+
+    def run(self, question: str) -> Dict:
+
+        intent = self.classify(question)
+
+        if intent == "standard":
+
+            return {
+                "mode": "standard",
+                "result": None,
+            }
+
+        # =================================================
+        # STEP 1: PLAN
+        # =================================================
+
+        plan = self.planner.create_plan(
+            question
+        )
+
+        # =================================================
+        tasks = plan.get(
+            "tasks",
+            []
+        )
+
+        # =================================================
+        # STEP 2: EXECUTE RESEARCH
+        # =================================================
+
+        all_findings: List[Dict] = []
+        all_sources: List[Dict] = []
+
+        task_results = []
+
+        for task in tasks:
+
+            query = task.get(
+                "query",
+                question
+            )
+
+            research = (
+                self.research_agent
+                .investigate(
+                    query,
+                    top_k=5,
+                )
+            )
+
+            task_findings = research.get(
+                "findings",
+                []
+            )
+
+            task_sources = research.get(
+                "sources",
+                []
+            )
+
+            all_findings.extend(
+                task_findings
+            )
+
+            all_sources.extend(
+                task_sources
+            )
+
+            task_results.append(
+                {
+                    "id": task.get("id"),
+                    "title": task.get(
+                        "title",
+                        "Research Task"
+                    ),
+                    "query": query,
+                    "status": research.get(
+                        "status",
+                        "unknown"
+                    ),
+                    "evidence_count": len(
+                        task_findings
+                    ),
+                }
+            )
+
+        # =================================================
+        # STEP 3: REMOVE DUPLICATE SOURCES
+        # =================================================
+
+        unique_sources = {}
+
+        for source in all_sources:
+
+            key = (
+                source.get("document"),
+                source.get("page"),
+            )
+
+            if key not in unique_sources:
+
+                unique_sources[key] = source
+
+        sources = list(
+            unique_sources.values()
+        )
+
+        # =================================================
+        # STEP 4: BUILD EVIDENCE
+        # =================================================
+
+        evidence_parts = []
+
+        for index, finding in enumerate(
+            all_findings,
+            1,
+        ):
+
+            evidence_parts.append(
+                f"""
+EVIDENCE {index}
+
+Document:
+{finding.get("document", "Unknown")}
+
+Page:
+{finding.get("page", "N/A")}
+
+Score:
+{finding.get("score", 0)}
+
+Content:
+{finding.get("text", "")}
+"""
+            )
+
+        combined_context = "\n".join(
+            evidence_parts
+        )
+
+        # =================================================
+        # STEP 5: SHARED SECURITY ANALYSIS
+        # =================================================
+        #
+        # Perform one LLM analysis for:
+        # - risks
+        # - policy conflicts
+        # - knowledge gaps
+        #
+        # This prevents three separate Gemini calls.
+        # =================================================
+
+        if combined_context.strip():
+
+            shared_analysis = (
+                self.shared_analyzer.analyze(
+                    question,
+                    combined_context,
+                )
+            )
+
+            if shared_analysis.get("status") == "llm_unavailable":
+                print("Gemini unavailable - continuing with retrieved evidence.")
+
+            risk_analysis = {
+                "status": shared_analysis.get(
+                    "status",
+                    "unknown",
+                ),
+                "risks": shared_analysis.get(
+                    "risks",
+                    [],
+                ),
+            }
+
+            conflict_analysis = {
+                "status": shared_analysis.get(
+                    "status",
+                    "unknown",
+                ),
+                "conflicts": shared_analysis.get(
+                    "conflicts",
+                    [],
+                ),
+            }
+
+            gap_analysis = {
+                "status": shared_analysis.get(
+                    "status",
+                    "unknown",
+                ),
+                "gaps": shared_analysis.get(
+                    "gaps",
+                    [],
+                ),
+            }
+
+        else:
+
+            shared_analysis = {
+                "status": "no_evidence",
+                "risks": [],
+                "conflicts": [],
+                "gaps": [],
+            }
+
+            if shared_analysis.get("status") == "llm_unavailable":
+                print("Gemini unavailable - continuing with retrieved evidence.")
+
+            risk_analysis = {
+                "status": "no_evidence",
+                "risks": [],
+            }
+
+            conflict_analysis = {
+                "status": "no_evidence",
+                "conflicts": [],
+            }
+
+            gap_analysis = {
+                "status": "no_evidence",
+                "gaps": [],
+            }
+
+        # =================================================
+        # STEP 7: REMEDIATION ANALYSIS
+        # =================================================
+
+        if combined_context.strip():
+
+            remediation_analysis = (
+                self.remediation_agent.generate(
+                    question,
+                    risk_analysis,
+                    conflict_analysis,
+                    gap_analysis,
+                )
+            )
+
+        else:
+
+            remediation_analysis = {
+                "status": "no_evidence",
+                "remediations": [],
+                "summary": "No evidence was available.",
+            }
+
+        # =================================================
+        # STEP 8: AGENT VERIFICATION
+        # =================================================
+
+        if combined_context.strip():
+
+            verification = self.critic.verify(
+                question,
+                combined_context,
+                risk_analysis,
+                conflict_analysis,
+                gap_analysis,
+            )
+
+        else:
+
+            verification = {
+                "overall_status": "no_evidence",
+                "verified_risks": [],
+                "verified_conflicts": [],
+                "verified_gaps": [],
+                "rejected_findings": [],
+                "verification_summary": (
+                    "No evidence was available."
+                ),
+            }
+
+        # =================================================
+        # STEP 9: FINAL REPORT
+        # =================================================
+
+        if combined_context.strip():
+
+            report = (
+                self.research_agent
+                .generate_report(
+                    question,
+                    combined_context,
+                )
+            )
+
+            report_lower = str(report).lower()
+
+            if (
+                "quota temporarily exceeded" in report_lower
+                or "generation service is temporarily unavailable" in report_lower
+                or "ai generation service is temporarily unavailable" in report_lower
+            ):
+
+                report = self._build_fallback_report(
+                    question,
+                    all_findings,
+                    risk_analysis,
+                    conflict_analysis,
+                    gap_analysis,
+                    remediation_analysis,
+                    verification,
+                )
+
+            status = "completed"
+
+        else:
+
+            report = (
+                "The agent could not find "
+                "sufficient evidence in the "
+                "enterprise knowledge base."
+            )
+
+            status = "no_evidence"
+
+        # =================================================
+        # STEP 7: RETURN AGENT TRACE
+        # =================================================
+
+        investigation_result = {
+
+            "objective": question,
+
+            "status": status,
+
+            "plan": {
+                "task_count": len(tasks),
+                "tasks": task_results,
+            },
+
+            "findings": all_findings,
+
+            "sources": sources,
+
+            "risk_analysis": risk_analysis,
+
+            "conflict_analysis": conflict_analysis,
+
+            "gap_analysis": gap_analysis,
+
+            "remediation_analysis": remediation_analysis,
+
+            "verification": verification,
+
+            "report": report,
+        }
+
+        # -------------------------------------------------
+        # SAVE INVESTIGATION TO MEMORY
+        # -------------------------------------------------
+
+        print('AGENT: REACHED MEMORY SAVE')
+
+        memory_record = self.memory.save(
+            investigation_result
+        )
+
+        print('AGENT: MEMORY SAVED')
+        print(memory_record)
+
+        return {
+            "mode": "research",
+            "result": investigation_result,
+            "memory": memory_record,
+        }
+
+
+
+
+
+
+
+    def _build_fallback_report(
+        self,
+        objective,
+        findings,
+        risk_analysis,
+        conflict_analysis,
+        gap_analysis,
+        remediation_analysis,
+        verification,
+    ):
+
+        lines = []
+
+        lines.append("ENTERPRISE SECURITY INVESTIGATION REPORT")
+        lines.append("=" * 55)
+
+        lines.append("")
+        lines.append("OBJECTIVE")
+        lines.append(objective)
+
+        lines.append("")
+        lines.append("EXECUTIVE SUMMARY")
+        lines.append("-" * 55)
+        lines.append(
+            f"Retrieved evidence findings: {len(findings)}"
+        )
+        lines.append(
+            f"Risks identified: "
+            f"{len(risk_analysis.get('risks', []))}"
+        )
+        lines.append(
+            f"Policy conflicts identified: "
+            f"{len(conflict_analysis.get('conflicts', []))}"
+        )
+        lines.append(
+            f"Knowledge gaps identified: "
+            f"{len(gap_analysis.get('gaps', []))}"
+        )
+        lines.append(
+            f"Remediation actions: "
+            f"{len(remediation_analysis.get('remediations', []))}"
+        )
+
+        lines.append("")
+        lines.append("RISKS")
+        lines.append("-" * 55)
+
+        for risk in risk_analysis.get("risks", []):
+
+            lines.append(
+                f"- {risk.get('title', 'Unknown Risk')} "
+                f"[{risk.get('severity', 'Unknown')}]"
+            )
+
+            if risk.get("evidence"):
+                lines.append(
+                    f"  Evidence: {risk.get('evidence')}"
+                )
+
+            if risk.get("recommendation"):
+                lines.append(
+                    f"  Recommendation: "
+                    f"{risk.get('recommendation')}"
+                )
+
+        lines.append("")
+        lines.append("POLICY CONFLICTS")
+        lines.append("-" * 55)
+
+        for conflict in conflict_analysis.get("conflicts", []):
+
+            lines.append(
+                f"- {conflict.get('title', 'Unknown Conflict')} "
+                f"[{conflict.get('severity', 'Unknown')}]"
+            )
+
+            if conflict.get("description"):
+                lines.append(
+                    f"  {conflict.get('description')}"
+                )
+
+        lines.append("")
+        lines.append("KNOWLEDGE GAPS")
+        lines.append("-" * 55)
+
+        for gap in gap_analysis.get("gaps", []):
+
+            lines.append(
+                f"- {gap.get('title', 'Unknown Gap')} "
+                f"[{gap.get('importance', 'Unknown')}]"
+            )
+
+            if gap.get("description"):
+                lines.append(
+                    f"  {gap.get('description')}"
+                )
+
+        lines.append("")
+        lines.append("REMEDIATION ACTIONS")
+        lines.append("-" * 55)
+
+        for remediation in remediation_analysis.get(
+            "remediations",
+            [],
+        ):
+
+            lines.append(
+                f"- {remediation.get('issue', 'Unknown Issue')} "
+                f"[{remediation.get('priority', 'Unknown')}]"
+            )
+
+            lines.append(
+                f"  Action: "
+                f"{remediation.get('recommended_action', '')}"
+            )
+
+            lines.append(
+                f"  Owner: "
+                f"{remediation.get('suggested_owner', '')}"
+            )
+
+            lines.append(
+                f"  Verification: "
+                f"{remediation.get('verification', '')}"
+            )
+
+        lines.append("")
+        lines.append("VERIFICATION")
+        lines.append("-" * 55)
+
+        lines.append(
+            f"Overall status: "
+            f"{verification.get('overall_status', 'unknown')}"
+        )
+
+        lines.append(
+            f"Verified risks: "
+            f"{len(verification.get('verified_risks', []))}"
+        )
+
+        lines.append(
+            f"Verified conflicts: "
+            f"{len(verification.get('verified_conflicts', []))}"
+        )
+
+        lines.append(
+            f"Verified gaps: "
+            f"{len(verification.get('verified_gaps', []))}"
+        )
+
+        lines.append(
+            f"Rejected findings: "
+            f"{len(verification.get('rejected_findings', []))}"
+        )
+
+        if verification.get("verification_summary"):
+            lines.append(
+                f"Summary: "
+                f"{verification.get('verification_summary')}"
+            )
+
+        lines.append("")
+        lines.append("REPORT GENERATION")
+        lines.append("-" * 55)
+        lines.append(
+            "Deterministic evidence-based fallback report "
+            "generated because the LLM generation service "
+            "was unavailable."
+        )
+
+        return "\n".join(lines)
+
