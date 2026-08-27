@@ -474,7 +474,6 @@ from agent.memory import InvestigationMemory
 class AgentRequest(BaseModel):
     objective: str = Field(..., min_length=5, max_length=2000)
     top_k: int = Field(default=8, ge=1, le=15)
-    employee: str = Field(default="Current Employee", max_length=100)
 
 
 agent_orchestrator = None
@@ -510,8 +509,7 @@ def research_agent_endpoint(request: AgentRequest):
             )
 
         result = agent_orchestrator.run(
-            request.objective,
-            employee=request.employee
+            request.objective
         )
 
         return result

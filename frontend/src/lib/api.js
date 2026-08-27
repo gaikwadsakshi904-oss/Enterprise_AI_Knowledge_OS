@@ -1,39 +1,67 @@
-﻿const BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
+﻿const API_BASE =
+  import.meta.env.VITE_API_URL ||
+  "http://127.0.0.1:8000";
 
-async function req(path, opt = {}) {
-  const r = await fetch(BASE + path, opt);
-  const t = await r.text();
+async function req(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      ...(options.body instanceof FormData
+        ? {}
+        : { "Content-Type": "application/json" }),
+      ...(options.headers || {})
+    }
+  });
 
-  let d = {};
+  let data = null;
+
   try {
-    d = t ? JSON.parse(t) : {};
+    data = await response.json();
   } catch {
-    d = { message: t };
+    data = null;
   }
 
-  if (!r.ok) {
-    throw Error(d.detail || d.message || `Request failed (${r.status})`);
+  if (!response.ok) {
+    throw new Error(
+      data?.detail ||
+      data?.message ||
+      `Request failed: ${response.status}`
+    );
   }
 
-  return d;
+  return data;
 }
 
 const api = {
-  health: () => req("/health"),
+  health: () =>
+    req("/health"),
 
   ask: (question) =>
     req("/api/ask", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question })
+      body: JSON.stringify({
+        question: question
+      })
     }),
 
-  investigate: (question) =>
+  investigate: (objective, employee) =>
     req("/api/agent/research", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question })
+      body: JSON.stringify({
+        objective: objective,
+        employee:
+          employee ||
+          localStorage.getItem("eakos_name") ||
+          localStorage.getItem("eakos_user") ||
+          "Current Employee"
+      })
     }),
+
+  getHistory: () =>
+    req("/api/agent/history"),
+
+  getInvestigation: (id) =>
+    req(`/api/agent/history/${id}`),
 
   uploadDocument: (file) => {
     const form = new FormData();
@@ -45,6 +73,9 @@ const api = {
     });
   },
 
+  getJob: (jobId) =>
+    req(`/api/jobs/${jobId}`),
+
   uploadSummary: (file) => {
     const form = new FormData();
     form.append("file", file);
@@ -53,10 +84,7 @@ const api = {
       method: "POST",
       body: form
     });
-  },
-
-  history: () => req("/api/agent/history")
+  }
 };
 
 export default api;
-

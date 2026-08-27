@@ -1,0 +1,343 @@
+﻿import { useEffect, useState } from "react";
+import api from "../lib/api";
+
+function formatDateTime(value) {
+    if (!value) return "—";
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return value;
+
+    return new Intl.DateTimeFormat("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "medium",
+        hour12: true,
+    }).format(date);
+}
+
+function formatDuration(seconds) {
+    if (seconds === undefined || seconds === null) return "—";
+
+    const total = Number(seconds);
+
+    if (!Number.isFinite(total)) return "—";
+
+    if (total < 60) return `${total.toFixed(1)} seconds`;
+
+    const minutes = Math.floor(total / 60);
+    const remaining = Math.round(total % 60);
+
+    return `${minutes}m ${remaining}s`;
+}
+
+export default function Report() {
+    const [history, setHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    const loadReport = async () => {
+        try {
+            setLoading(true);
+            setError("");
+
+            const data = await api.getHistory();
+
+            const items =
+                Array.isArray(data)
+                    ? data
+                    : data?.history ||
+                      data?.investigations ||
+                      data?.items ||
+                      [];
+
+            setHistory([...items].reverse());
+        } catch (err) {
+            console.error(err);
+            setError(
+                err?.message ||
+                "Unable to load investigation history."
+            );
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadReport();
+
+        const interval = setInterval(loadReport, 5000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="report-page">
+
+            <header className="report-hero">
+                <div>
+                    <div className="report-eyebrow">
+                        ENTERPRISE INTELLIGENCE
+                    </div>
+
+                    <h1>Executive Reports</h1>
+
+                    <p>
+                        Real-time investigation activity, evidence and
+                        AI-generated intelligence.
+                    </p>
+                </div>
+
+                <button
+                    className="report-export"
+                    onClick={() => window.print()}
+                >
+                    Export / Print Report
+                </button>
+            </header>
+
+            {loading && (
+                <section className="report-panel">
+                    <div className="report-loading">
+                        <div className="report-spinner" />
+                        <h2>Loading intelligence...</h2>
+                        <p>Retrieving investigation activity.</p>
+                    </div>
+                </section>
+            )}
+
+            {error && !loading && (
+                <section className="report-panel report-error">
+                    <div className="report-eyebrow">
+                        SYSTEM ERROR
+                    </div>
+
+                    <h2>Unable to load reports</h2>
+
+                    <p>{error}</p>
+
+                    <button
+                        className="report-retry"
+                        onClick={loadReport}
+                    >
+                        Retry
+                    </button>
+                </section>
+            )}
+
+            {!loading && !error && (
+                <section className="report-panel">
+
+                    <div className="report-section-header">
+                        <div>
+                            <div className="report-eyebrow">
+                                INVESTIGATION ACTIVITY
+                            </div>
+
+                            <h2>Employee Intelligence</h2>
+                        </div>
+
+                        <div className="report-count">
+                            <strong>{history.length}</strong>
+                            <span>investigations</span>
+                        </div>
+                    </div>
+
+                    {history.length === 0 ? (
+                        <div className="report-empty">
+                            <div className="empty-icon">◉</div>
+
+                            <h3>No investigations yet</h3>
+
+                            <p>
+                                Run an investigation to generate
+                                employee activity and intelligence.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="report-grid">
+
+                            {history.map((item, index) => {
+
+                                const question =
+                                    item.objective ||
+                                    item.question ||
+                                    item.query ||
+                                    item.title ||
+                                    "Investigation";
+
+                                const answer =
+                                    item.report ||
+                                    item.answer ||
+                                    item.response ||
+                                    item.summary ||
+                                    "";
+
+                                const employee =
+                                    item.employee ||
+                                    item.user ||
+                                    "System User";
+
+                                const started =
+                                    item.started_at ||
+                                    item.timestamp;
+
+                                const completed =
+                                    item.completed_at ||
+                                    item.timestamp;
+
+                                const work =
+                                    Array.isArray(item.work_completed)
+                                        ? item.work_completed
+                                        : [];
+
+                                const status =
+                                    item.status || "completed";
+
+                                return (
+                                    <article
+                                        className="report-card"
+                                        key={
+                                            item.investigation_id ||
+                                            item.id ||
+                                            index
+                                        }
+                                    >
+
+                                        <div className="report-card-top">
+
+                                            <span className="report-number">
+                                                {item.investigation_id ||
+                                                    `REPORT #${history.length - index}`}
+                                            </span>
+
+                                            <span className="report-date">
+                                                {formatDateTime(started)}
+                                            </span>
+
+                                        </div>
+
+                                        <div className="report-status">
+
+                                            <span className="status-dot" />
+
+                                            {status === "completed"
+                                                ? "Investigation completed"
+                                                : status}
+
+                                        </div>
+
+                                        <h3>
+                                            {question}
+                                        </h3>
+
+                                        <div className="report-meta">
+
+                                            <div>
+                                                <strong>Employee</strong>
+                                                <span>
+                                                    {employee}
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <strong>Started</strong>
+                                                <span>
+                                                    {formatDateTime(started)}
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <strong>Completed</strong>
+                                                <span>
+                                                    {formatDateTime(completed)}
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <strong>Duration</strong>
+                                                <span>
+                                                    {formatDuration(
+                                                        item.duration_seconds
+                                                    )}
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <strong>Evidence</strong>
+                                                <span>
+                                                    {item.evidence_count ?? 0}
+                                                </span>
+                                            </div>
+
+                                            <div>
+                                                <strong>Sources</strong>
+                                                <span>
+                                                    {item.source_count ?? 0}
+                                                </span>
+                                            </div>
+
+                                        </div>
+
+                                        {work.length > 0 && (
+                                            <div className="report-work">
+
+                                                <div className="report-eyebrow">
+                                                    AI WORK COMPLETED
+                                                </div>
+
+                                                <div className="work-list">
+
+                                                    {work.map(
+                                                        (step, stepIndex) => (
+                                                            <div
+                                                                className="work-item"
+                                                                key={stepIndex}
+                                                            >
+                                                                <span>✓</span>
+                                                                {step}
+                                                            </div>
+                                                        )
+                                                    )}
+
+                                                </div>
+
+                                            </div>
+                                        )}
+
+                                        <div className="report-summary">
+
+                                            <div className="report-eyebrow">
+                                                EXECUTIVE RESULT
+                                            </div>
+
+                                            <p>
+                                                {answer ||
+                                                    "No report summary available."}
+                                            </p>
+
+                                        </div>
+
+                                        <div className="report-card-footer">
+
+                                            <span>
+                                                Investigation #{item.id || "—"}
+                                            </span>
+
+                                            <span>
+                                                Live activity
+                                            </span>
+
+                                        </div>
+
+                                    </article>
+                                );
+                            })}
+
+                        </div>
+                    )}
+
+                </section>
+            )}
+        </div>
+    );
+}

@@ -17,7 +17,7 @@ export default function Investigation() {
     setError("");
 
     try {
-      const data = await api.investigate(question);
+      const data = await api.ask(question);
       setResult(data);
       localStorage.setItem("eakos_latest_answer", JSON.stringify(data));
     } catch (e) {
@@ -167,4 +167,3 @@ export default function Investigation() {
     </>
   );
 }
-

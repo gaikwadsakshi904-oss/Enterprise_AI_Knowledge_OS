@@ -1,426 +1,178 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import api from "../lib/api";
-
-function Section({ title, children }) {
-    return (
-        <section style={{
-            background: "#111827",
-            border: "1px solid #263244",
-            borderRadius: 16,
-            padding: 22,
-            marginBottom: 18
-        }}>
-            <h2 style={{
-                margin: "0 0 16px",
-                fontSize: 17,
-                color: "#f8fafc"
-            }}>
-                {title}
-            </h2>
-            {children}
-        </section>
-    );
-}
-
-function Item({ item }) {
-    if (item === null || item === undefined) return null;
-
-    if (typeof item !== "object") {
-        return (
-            <div style={{
-                padding: "10px 12px",
-                borderRadius: 8,
-                background: "#0b1220",
-                color: "#cbd5e1",
-                marginBottom: 8,
-                lineHeight: 1.5
-            }}>
-                {String(item)}
-            </div>
-        );
-    }
-
-    return (
-        <div style={{
-            padding: 14,
-            borderRadius: 10,
-            background: "#0b1220",
-            border: "1px solid #1e293b",
-            marginBottom: 10
-        }}>
-            {Object.entries(item).map(([key, value]) => (
-                <div key={key} style={{ marginBottom: 9 }}>
-                    <div style={{
-                        fontSize: 11,
-                        textTransform: "uppercase",
-                        letterSpacing: ".08em",
-                        color: "#64748b",
-                        marginBottom: 3
-                    }}>
-                        {key.replaceAll("_", " ")}
-                    </div>
-
-                    {typeof value === "object"
-                        ? <Item item={value} />
-                        : <div style={{
-                            color: "#e2e8f0",
-                            lineHeight: 1.5
-                        }}>
-                            {String(value)}
-                        </div>
-                    }
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function DataSection({ title, data }) {
-    if (!data) return null;
-
-    const values = Array.isArray(data) ? data : [data];
-
-    return (
-        <Section title={title}>
-            {values.length === 0
-                ? <div style={{ color: "#64748b" }}>No data available.</div>
-                : values.map((item, index) => (
-                    <Item key={index} item={item} />
-                ))
-            }
-        </Section>
-    );
-}
 
 export default function Report() {
     const [history, setHistory] = useState([]);
-    const [selected, setSelected] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    async function loadReports() {
+    const loadReport = async () => {
         try {
             setLoading(true);
             setError("");
 
-            const result = await api.getHistory();
+            const data = await api.getHistory();
 
-            const records =
-                Array.isArray(result)
-                    ? result
-                    : result?.history ||
-                      result?.investigations ||
-                      result?.data ||
-                      [];
+            const items = Array.isArray(data)
+                ? data
+                : data?.history || [];
 
-            setHistory(records);
-
-            if (records.length > 0) {
-                setSelected(records[0]);
-            }
+            setHistory([...items].reverse());
         } catch (err) {
-            setError(err.message || "Unable to load investigation history.");
+            console.error(err);
+            setError(err?.message || "Unable to load reports.");
         } finally {
             setLoading(false);
         }
-    }
+    };
 
     useEffect(() => {
-        loadReports();
+        loadReport();
+        const timer = setInterval(loadReport, 5000);
+        return () => clearInterval(timer);
     }, []);
 
-    const report = selected || {};
+    const formatDate = (value) => {
+        if (!value) return "—";
+        const d = new Date(value);
+        return isNaN(d.getTime())
+            ? value
+            : d.toLocaleString("en-IN", {
+                dateStyle: "medium",
+                timeStyle: "medium"
+            });
+    };
 
-    const counts = useMemo(() => {
-        const findings =
-            report.findings ||
-            report.result?.findings ||
-            [];
-
-        const risks =
-            report.risks ||
-            report.result?.risks ||
-            [];
-
-        const conflicts =
-            report.policy_conflicts ||
-            report.conflicts ||
-            report.result?.policy_conflicts ||
-            [];
-
-        const gaps =
-            report.knowledge_gaps ||
-            report.gaps ||
-            report.result?.knowledge_gaps ||
-            [];
-
-        const actions =
-            report.remediation_actions ||
-            report.actions ||
-            report.result?.remediation_actions ||
-            [];
-
-        return {
-            findings: Array.isArray(findings) ? findings.length : 0,
-            risks: Array.isArray(risks) ? risks.length : 0,
-            conflicts: Array.isArray(conflicts) ? conflicts.length : 0,
-            gaps: Array.isArray(gaps) ? gaps.length : 0,
-            actions: Array.isArray(actions) ? actions.length : 0
-        };
-    }, [report]);
-
-    function printReport() {
-        window.print();
-    }
+    const formatDuration = (seconds) => {
+        if (seconds === undefined || seconds === null) return "—";
+        if (seconds < 60) return `${seconds.toFixed(1)} seconds`;
+        const m = Math.floor(seconds / 60);
+        const s = Math.round(seconds % 60);
+        return `${m}m ${s}s`;
+    };
 
     return (
-        <div style={{
-            maxWidth: 1250,
-            margin: "0 auto",
-            paddingBottom: 40
-        }}>
-
-            <div className="report-header" style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 20,
-                marginBottom: 26
-            }}>
+        <div className="report-page">
+            <header className="report-hero">
                 <div>
-                    <div style={{
-                        color: "#64748b",
-                        fontSize: 11,
-                        letterSpacing: ".14em",
-                        fontWeight: 700,
-                        marginBottom: 8
-                    }}>
-                        ENTERPRISE INTELLIGENCE
-                    </div>
-
-                    <h1 style={{
-                        margin: 0,
-                        color: "#f8fafc",
-                        fontSize: 30
-                    }}>
-                        Executive Reports
-                    </h1>
-
-                    <p style={{
-                        color: "#94a3b8",
-                        marginTop: 8
-                    }}>
-                        Investigation results, evidence and remediation intelligence.
-                    </p>
+                    <div className="report-eyebrow">ENTERPRISE INTELLIGENCE</div>
+                    <h1>Executive Reports</h1>
+                    <p>Real-time investigation activity, evidence and AI-generated intelligence.</p>
                 </div>
 
-                <button
-                    onClick={printReport}
-                    disabled={!selected}
-                    style={{
-                        border: "1px solid #334155",
-                        background: "#2563eb",
-                        color: "white",
-                        borderRadius: 10,
-                        padding: "11px 18px",
-                        cursor: "pointer",
-                        fontWeight: 700
-                    }}
-                >
+                <button className="report-export" onClick={() => window.print()}>
                     Export / Print Report
                 </button>
-            </div>
+            </header>
 
-            {loading && (
-                <Section title="Loading">
-                    <div style={{ color: "#94a3b8" }}>
-                        Loading investigation history...
-                    </div>
-                </Section>
+            {loading && history.length === 0 && (
+                <section className="report-panel">
+                    <h2>Loading intelligence...</h2>
+                </section>
             )}
 
             {error && (
-                <Section title="Report Error">
-                    <div style={{ color: "#fca5a5" }}>
-                        {error}
-                    </div>
-                    <button
-                        onClick={loadReports}
-                        style={{
-                            marginTop: 12,
-                            padding: "9px 14px",
-                            borderRadius: 8,
-                            border: "1px solid #475569",
-                            background: "#1e293b",
-                            color: "white",
-                            cursor: "pointer"
-                        }}
-                    >
+                <section className="report-panel report-error">
+                    <h2>Unable to load reports</h2>
+                    <p>{error}</p>
+                    <button className="report-retry" onClick={loadReport}>
                         Retry
                     </button>
-                </Section>
+                </section>
             )}
 
-            {!loading && !error && history.length === 0 && (
-                <Section title="No Investigations Yet">
-                    <div style={{
-                        color: "#94a3b8",
-                        lineHeight: 1.7
-                    }}>
-                        Run an investigation first. Completed investigations
-                        will automatically appear here as executive reports.
-                    </div>
-                </Section>
-            )}
-
-            {history.length > 0 && (
-                <>
-                    <Section title="Investigation History">
-                        <select
-                            value={history.indexOf(selected)}
-                            onChange={(e) =>
-                                setSelected(history[Number(e.target.value)])
-                            }
-                            style={{
-                                width: "100%",
-                                padding: 12,
-                                borderRadius: 9,
-                                border: "1px solid #334155",
-                                background: "#0b1220",
-                                color: "#e2e8f0"
-                            }}
-                        >
-                            {history.map((item, index) => (
-                                <option key={index} value={index}>
-                                    Investigation #{item.id || index + 1}
-                                    {" — "}
-                                    {item.objective ||
-                                        item.question ||
-                                        item.title ||
-                                        "Enterprise investigation"}
-                                </option>
-                            ))}
-                        </select>
-                    </Section>
-
-                    <Section title="Investigation Overview">
-                        <div style={{
-                            color: "#e2e8f0",
-                            fontSize: 16,
-                            lineHeight: 1.7
-                        }}>
-                            {report.objective ||
-                                report.question ||
-                                report.title ||
-                                report.result?.objective ||
-                                "Enterprise AI security investigation"}
+            {!error && history.length > 0 && (
+                <section className="report-panel">
+                    <div className="report-section-header">
+                        <div>
+                            <div className="report-eyebrow">INVESTIGATION ACTIVITY</div>
+                            <h2>Employee Intelligence</h2>
                         </div>
 
-                        {report.created_at && (
-                            <div style={{
-                                marginTop: 10,
-                                color: "#64748b",
-                                fontSize: 13
-                            }}>
-                                Created: {report.created_at}
-                            </div>
-                        )}
-                    </Section>
-
-                    <div style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))",
-                        gap: 14,
-                        marginBottom: 18
-                    }}>
-                        {[
-                            ["Findings", counts.findings],
-                            ["Risks", counts.risks],
-                            ["Policy Conflicts", counts.conflicts],
-                            ["Knowledge Gaps", counts.gaps],
-                            ["Remediation Actions", counts.actions]
-                        ].map(([label, value]) => (
-                            <div key={label} style={{
-                                background: "#111827",
-                                border: "1px solid #263244",
-                                borderRadius: 14,
-                                padding: 20
-                            }}>
-                                <div style={{
-                                    color: "#64748b",
-                                    fontSize: 11,
-                                    textTransform: "uppercase",
-                                    letterSpacing: ".07em"
-                                }}>
-                                    {label}
-                                </div>
-
-                                <div style={{
-                                    marginTop: 8,
-                                    color: "#f8fafc",
-                                    fontSize: 30,
-                                    fontWeight: 800
-                                }}>
-                                    {value}
-                                </div>
-                            </div>
-                        ))}
+                        <div className="report-count">
+                            <strong>{history.length}</strong>
+                            <span>investigations</span>
+                        </div>
                     </div>
 
-                    <DataSection
-                        title="Findings"
-                        data={report.findings || report.result?.findings}
-                    />
+                    <div className="report-grid">
+                        {history.map((item, index) => {
+                            const question =
+                                item.objective ||
+                                item.question ||
+                                item.query ||
+                                "Investigation";
 
-                    <DataSection
-                        title="Risks"
-                        data={report.risks || report.result?.risks}
-                    />
+                            const result =
+                                item.report ||
+                                item.answer ||
+                                item.summary ||
+                                item.result ||
+                                "";
 
-                    <DataSection
-                        title="Policy Conflicts"
-                        data={
-                            report.policy_conflicts ||
-                            report.conflicts ||
-                            report.result?.policy_conflicts
-                        }
-                    />
+                            const work =
+                                Array.isArray(item.work_completed)
+                                    ? item.work_completed
+                                    : [];
 
-                    <DataSection
-                        title="Knowledge Gaps"
-                        data={
-                            report.knowledge_gaps ||
-                            report.gaps ||
-                            report.result?.knowledge_gaps
-                        }
-                    />
+                            const employee =
+                                item.employee ||
+                                "Current Employee";
 
-                    <DataSection
-                        title="Remediation Actions"
-                        data={
-                            report.remediation_actions ||
-                            report.actions ||
-                            report.result?.remediation_actions
-                        }
-                    />
+                            return (
+                                <article
+                                    className="report-card"
+                                    key={item.id || item.investigation_id || index}
+                                >
+                                    <div className="report-card-top">
+                                        <span className="report-number">
+                                            REPORT #{item.id || history.length - index}
+                                        </span>
 
-                    <DataSection
-                        title="Evidence & Sources"
-                        data={
-                            report.sources ||
-                            report.evidence ||
-                            report.result?.sources
-                        }
-                    />
+                                        <span className="report-date">
+                                            {formatDate(item.completed_at || item.timestamp)}
+                                        </span>
+                                    </div>
 
-                    <DataSection
-                        title="Verification"
-                        data={
-                            report.verification ||
-                            report.result?.verification
-                        }
-                    />
-                </>
+                                    <div className="report-status">
+                                        <span className="status-dot" />
+                                        {item.status === "completed"
+                                            ? "Investigation completed"
+                                            : item.status || "Investigation"}
+                                    </div>
+
+                                    <h3>{question}</h3>
+
+                                    <div className="report-meta">
+                                        <div><strong>Employee:</strong> {employee}</div>
+                                        <div><strong>Started:</strong> {formatDate(item.started_at)}</div>
+                                        <div><strong>Completed:</strong> {formatDate(item.completed_at)}</div>
+                                        <div><strong>Duration:</strong> {formatDuration(item.duration_seconds)}</div>
+                                        <div><strong>Evidence:</strong> {item.evidence_count ?? "—"}</div>
+                                        <div><strong>Sources:</strong> {item.source_count ?? "—"}</div>
+                                    </div>
+
+                                    {work.length > 0 && (
+                                        <div className="report-work">
+                                            <div className="report-eyebrow">WORK COMPLETED</div>
+                                            {work.map((step, i) => (
+                                                <div key={i} className="work-step">
+                                                    <span>✓</span>
+                                                    {step}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="report-result">
+                                        <div className="report-eyebrow">EXECUTIVE RESULT</div>
+                                        <p>{result || "No executive result available."}</p>
+                                    </div>
+                                </article>
+                            );
+                        })}
+                    </div>
+                </section>
             )}
         </div>
     );

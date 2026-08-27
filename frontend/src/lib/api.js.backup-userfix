@@ -1,0 +1,74 @@
+﻿const API_BASE = "http://127.0.0.1:8000";
+
+async function req(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, options);
+
+  let data = null;
+
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.detail ||
+      data?.message ||
+      `Request failed: ${response.status}`
+    );
+  }
+
+  return data;
+}
+
+const api = {
+  health: () => req("/health"),
+
+  ask: (question) =>
+    req("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question })
+    }),
+
+  investigate: (question) => {
+    const email = localStorage.getItem("eakos_user") || "";
+
+    const employee =
+      localStorage.getItem("eakos_name") ||
+      email.split("@")[0] ||
+      "Current Employee";
+
+    return req("/api/agent/research", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        objective: question,
+        employee: employee,
+        top_k: 8
+      })
+    });
+  },
+
+  uploadDocument: (file) => {
+    const form = new FormData();
+    form.append("file", file);
+
+    return req("/api/documents/upload", {
+      method: "POST",
+      body: form
+    });
+  },
+
+  getJob: (jobId) =>
+    req(`/api/jobs/${jobId}`),
+
+  getHistory: () =>
+    req("/api/agent/history"),
+
+  getInvestigation: (investigationId) =>
+    req(`/api/agent/history/${investigationId}`)
+};
+
+export default api;

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+﻿import { useState } from "react";
 import api from "../lib/api";
 
 export default function KnowledgeBase() {
@@ -7,7 +7,6 @@ export default function KnowledgeBase() {
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState("");
-    const [job, setJob] = useState(null);
 
     const handleFile = (e) => {
         const selected = e.target.files?.[0];
@@ -19,36 +18,6 @@ export default function KnowledgeBase() {
         setError("");
     };
 
-    useEffect(() => {
-        if (!job?.job_id) return;
-
-        let cancelled = false;
-
-        const poll = async () => {
-            try {
-                const current = await api.getJob(job.job_id);
-
-                if (cancelled) return;
-
-                setJob(current);
-
-                if (
-                    current.status !== "completed" &&
-                    current.status !== "failed"
-                ) {
-                    setTimeout(poll, 1000);
-                }
-            } catch (err) {
-                console.warn("Job status unavailable:", err);
-            }
-        };
-
-        poll();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [job?.job_id]);
     const handleProcess = async () => {
         if (!file) {
             setError("Please select a document first.");
@@ -69,15 +38,6 @@ export default function KnowledgeBase() {
             }
 
             setResult(response);
-
-            if (response.job_id) {
-                setJob({
-                    job_id: response.job_id,
-                    status: "processing",
-                    stage: "Processing document",
-                    progress: 10
-                });
-            }
         } catch (err) {
             setError(err.message || "Something went wrong.");
         } finally {
@@ -696,5 +656,3 @@ const styles = {
         fontSize: "11px"
     }
 };
-
-

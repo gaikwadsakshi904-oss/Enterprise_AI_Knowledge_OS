@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from typing import Dict, List
 
 from .planner import AgentPlanner
@@ -99,9 +98,7 @@ class AgentOrchestrator:
     # AGENTIC RESEARCH
     # =====================================================
 
-    def run(self, question: str, employee: str = 'Current Employee') -> Dict:
-
-        started_at = datetime.now(timezone.utc).isoformat()
+    def run(self, question: str) -> Dict:
 
         intent = self.classify(question)
 
@@ -422,52 +419,7 @@ Content:
         # STEP 7: RETURN AGENT TRACE
         # =================================================
 
-        completed_at = datetime.now(timezone.utc).isoformat()
-
-        try:
-            start_dt = datetime.fromisoformat(
-                started_at.replace("Z", "+00:00")
-            )
-            end_dt = datetime.fromisoformat(
-                completed_at.replace("Z", "+00:00")
-            )
-            duration_seconds = round(
-                (end_dt - start_dt).total_seconds(),
-                2
-            )
-        except Exception:
-            duration_seconds = 0
-
-        work_completed = [
-            "Investigation started",
-            "Investigation plan created",
-            f"{len(tasks)} research task(s) executed",
-            f"{len(all_findings)} evidence finding(s) retrieved",
-            f"{len(sources)} unique source(s) analyzed",
-            "Risk analysis completed",
-            "Conflict analysis completed",
-            "Knowledge gap analysis completed",
-            "Remediation analysis completed",
-            "Agent verification completed",
-            "Executive report generated",
-            "Investigation completed",
-        ]
-
         investigation_result = {
-
-            "employee": employee,
-
-            "started_at": started_at,
-
-            "completed_at": completed_at,
-
-            "duration_seconds": duration_seconds,
-
-            "evidence_count": len(all_findings),
-
-            "source_count": len(sources),
-
-            "work_completed": work_completed,
 
             "objective": question,
 
