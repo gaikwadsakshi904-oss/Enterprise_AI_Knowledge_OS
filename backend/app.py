@@ -577,3 +577,5 @@ def get_agent_investigation(
         )
 
 
+from document_summary_api import router as document_summary_router
+app.include_router(document_summary_router)
