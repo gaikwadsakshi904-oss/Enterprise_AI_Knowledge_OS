@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 from typing import Dict, List
 
 from .planner import AgentPlanner
@@ -103,11 +103,16 @@ class AgentOrchestrator:
 
         started_at = datetime.now(timezone.utc).isoformat()
 
-        # The /api/agent/research endpoint is dedicated to
-        # investigation. Always execute the research pipeline
-        # so ordinary employee questions receive an AI answer.
-        intent = "research"
-# =================================================
+        intent = self.classify(question)
+
+        if intent == "standard":
+
+            return {
+                "mode": "standard",
+                "result": None,
+            }
+
+        # =================================================
         # STEP 1: PLAN
         # =================================================
 
@@ -686,5 +691,4 @@ Content:
         )
 
         return "\n".join(lines)
-
 

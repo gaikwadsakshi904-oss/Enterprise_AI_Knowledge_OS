@@ -96,6 +96,23 @@ Return ONLY valid JSON:
 
         for risk in risk_analysis.get("risks", []):
 
+            # The risk analyzer can return either a dictionary
+            # or a plain string. Normalize it before using .get().
+            if isinstance(risk, str):
+                risk = {
+                    "severity": "Medium",
+                    "title": risk,
+                    "recommendation": "Review and remediate the identified risk.",
+                    "impact": risk,
+                }
+            elif not isinstance(risk, dict):
+                risk = {
+                    "severity": "Medium",
+                    "title": str(risk),
+                    "recommendation": "Review and remediate the identified risk.",
+                    "impact": str(risk),
+                }
+
             severity = str(
                 risk.get("severity", "Medium")
             ).upper()

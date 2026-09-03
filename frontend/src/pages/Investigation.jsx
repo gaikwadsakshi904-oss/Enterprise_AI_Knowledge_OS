@@ -1,170 +1,372 @@
 ﻿import { useState } from "react";
 import api from "../lib/api";
 
-const DEFAULT_QUESTION =
-  "What are the rules for responsible AI usage by employees?";
-
 export default function Investigation() {
-  const [question, setQuestion] = useState(DEFAULT_QUESTION);
+  const [question, setQuestion] = useState(
+    "What are the rules for responsible AI usage by employees?"
+  );
+
+  const [answer, setAnswer] = useState("");
+  const [sources, setSources] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
   const [error, setError] = useState("");
 
-  async function askAI() {
-    if (!question.trim()) return;
+  async function askAI(e) {
+    e.preventDefault();
+
+    if (!question.trim()) {
+      setError("Please enter a question.");
+      return;
+    }
 
     setLoading(true);
     setError("");
+    setAnswer("");
+    setSources([]);
 
     try {
-      const data = await api.investigate(question);
-      setResult(data);
-      localStorage.setItem("eakos_latest_answer", JSON.stringify(data));
-    } catch (e) {
-      setError(e?.message || "Unable to get AI response.");
+      const employee =
+        localStorage.getItem("eakos_name") ||
+        localStorage.getItem("eakos_user") ||
+        "Current Employee";
+
+      /*
+       * Investigation endpoint
+       */
+      const data = await api.investigate(
+        question.trim(),
+        employee
+      );
+
+      console.log("AI INVESTIGATION RESPONSE:", data);
+
+      /*
+       * Support the different response names used
+       * by the backend.
+       */
+      const result = data?.result || data?.data || data;
+
+      const finalAnswer =
+        result?.answer ||
+        result?.final_answer ||
+        result?.finalAnswer ||
+        result?.response ||
+        result?.report ||
+        result?.summary ||
+        result?.message ||
+        "";
+
+      const finalSources =
+        result?.sources ||
+        result?.evidence ||
+        result?.supporting_sources ||
+        [];
+
+      if (!finalAnswer) {
+        setAnswer(
+          "The AI completed the investigation but did not return an answer."
+        );
+      } else {
+        setAnswer(
+          typeof finalAnswer === "string"
+            ? finalAnswer
+            : JSON.stringify(finalAnswer, null, 2)
+        );
+      }
+
+      setSources(
+        Array.isArray(finalSources)
+          ? finalSources
+          : []
+      );
+
+    } catch (err) {
+      console.error(err);
+      setError(
+        err?.message ||
+        "Unable to get an answer from the AI."
+      );
     } finally {
       setLoading(false);
     }
   }
 
-  const sources = result?.sources || [];
-  const confidence = result?.confidence || {};
-
   return (
-    <>
-      <div className="intro">
-        <div>
-          <small>AI KNOWLEDGE ASSISTANT</small>
-          <h2>Enterprise Document Investigation</h2>
-          <p>
-            Ask questions and get grounded answers from company documents,
-            policies and knowledge-base evidence.
-          </p>
+    <div
+      style={{
+        maxWidth: "1250px",
+        margin: "0 auto",
+        padding: "48px 44px 80px"
+      }}
+    >
+
+      <div style={{ marginBottom: "30px" }}>
+
+        <div
+          style={{
+            color: "#69d9d5",
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "2px"
+          }}
+        >
+          AI KNOWLEDGE ASSISTANT
         </div>
+
+        <h1
+          style={{
+            color: "#edf5ff",
+            fontSize: "34px",
+            margin: "8px 0"
+          }}
+        >
+          Enterprise Document Investigation
+        </h1>
+
+        <p style={{ color: "#8fa4bd" }}>
+          Ask questions and get grounded answers from
+          company documents and policies.
+        </p>
+
       </div>
 
-      <div className="panel query">
-        <small>ASK YOUR QUESTION</small>
 
-        <h3>What would you like to know?</h3>
+      {/* QUESTION */}
+      <section
+        style={{
+          background: "#111c2d",
+          border: "1px solid #263b54",
+          borderRadius: "16px",
+          padding: "28px",
+          marginBottom: "20px"
+        }}
+      >
 
-        <textarea
-          rows="5"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask about a company policy..."
-        />
+        <div
+          style={{
+            color: "#69a9dc",
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "2px",
+            marginBottom: "10px"
+          }}
+        >
+          ASK YOUR QUESTION
+        </div>
 
-        <div className="query-foot">
-          <span>
-            Answers are grounded in the enterprise knowledge base.
-          </span>
+        <h2
+          style={{
+            color: "#e8f2ff",
+            fontSize: "19px"
+          }}
+        >
+          What would you like to know?
+        </h2>
 
-          <button
-            className="btn"
-            onClick={askAI}
-            disabled={loading}
+        <form onSubmit={askAI}>
+
+          <textarea
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Ask a question about your enterprise documents..."
+            rows={6}
+            style={{
+              width: "100%",
+              boxSizing: "border-box",
+              padding: "18px",
+              background: "#07111f",
+              color: "#e8f2ff",
+              border: "1px solid #30445d",
+              borderRadius: "10px",
+              fontSize: "15px",
+              fontFamily: "inherit",
+              resize: "vertical"
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              marginTop: "14px"
+            }}
           >
-            {loading ? "Thinking..." : "Ask AI →"}
-          </button>
-        </div>
-      </div>
 
-      {error && <div className="error">{error}</div>}
-
-      {result && (
-        <>
-          <div className="panel">
-            <small>AI ANSWER</small>
-
-            <h3>Knowledge-based response</h3>
-
-            <div
-              className="ai-answer"
+            <button
+              type="submit"
+              disabled={loading}
               style={{
-                whiteSpace: "pre-wrap",
-                lineHeight: 1.7,
-                marginTop: "15px"
+                border: "none",
+                borderRadius: "10px",
+                padding: "13px 25px",
+                background: "#61d8d5",
+                color: "#06121e",
+                fontWeight: "800",
+                cursor: loading ? "wait" : "pointer"
               }}
             >
-              {result.answer || "No answer returned."}
-            </div>
+              {loading ? "Thinking..." : "Ask AI →"}
+            </button>
+
           </div>
 
-          <div className="metrics mini">
-            <div className="metric">
-              <strong>{sources.length}</strong>
-              <span>Sources</span>
-            </div>
+        </form>
 
-            <div className="metric">
-              <strong>
-                {confidence.percentage ?? 0}%
-              </strong>
-              <span>Confidence</span>
-            </div>
+        {error && (
+          <div
+            style={{
+              marginTop: "15px",
+              padding: "12px",
+              borderRadius: "8px",
+              background: "#35161b",
+              color: "#f0a4b0"
+            }}
+          >
+            {error}
+          </div>
+        )}
 
-            <div className="metric">
-              <strong>
-                {confidence.level || "N/A"}
-              </strong>
-              <span>Evidence level</span>
-            </div>
+      </section>
+
+
+      {/* ANSWER */}
+      <section
+        style={{
+          background: "#111c2d",
+          border: "1px solid #263b54",
+          borderRadius: "16px",
+          padding: "28px",
+          marginBottom: "20px"
+        }}
+      >
+
+        <div
+          style={{
+            color: "#69d9d5",
+            fontSize: "11px",
+            fontWeight: "700",
+            letterSpacing: "2px"
+          }}
+        >
+          AI ANSWER
+        </div>
+
+        <h2
+          style={{
+            color: "#e8f2ff",
+            marginBottom: "18px"
+          }}
+        >
+          Answer
+        </h2>
+
+        {loading ? (
+
+          <div
+            style={{
+              padding: "25px",
+              background: "#091321",
+              borderRadius: "10px",
+              color: "#69d9d5"
+            }}
+          >
+            AI is searching the enterprise knowledge base...
           </div>
 
-          <div className="panel">
-            <small>DOCUMENT EVIDENCE</small>
+        ) : answer ? (
 
-            <h3>
-              Retrieved sources {sources.length}
-            </h3>
-
-            {sources.length === 0 ? (
-              <p>No document sources returned.</p>
-            ) : (
-              sources.map((source, index) => (
-                <div className="finding" key={index}>
-                  <small>SOURCE {index + 1}</small>
-
-                  <b>{source.document}</b>
-
-                  <span>
-                    {source.page
-                      ? `Page ${source.page} • `
-                      : ""}
-                    Relevance:{" "}
-                    {source.score
-                      ? Number(source.score).toFixed(3)
-                      : "N/A"}
-                  </span>
-                </div>
-              ))
-            )}
+          <div
+            style={{
+              padding: "22px",
+              background: "#091321",
+              border: "1px solid #263b54",
+              borderRadius: "10px",
+              color: "#dceafa",
+              fontSize: "16px",
+              lineHeight: "1.8",
+              whiteSpace: "pre-wrap"
+            }}
+          >
+            {answer}
           </div>
 
-          <div className="panel">
-            <small>EVIDENCE CONFIDENCE</small>
+        ) : (
 
-            <h3>
-              {confidence.percentage ?? 0}% —{" "}
-              {confidence.level || "UNKNOWN"}
-            </h3>
-
-            <p>
-              {confidence.reason ||
-                "Evidence retrieved from the enterprise knowledge base."}
-            </p>
-
-            <p>
-              Grounded:{" "}
-              <strong>
-                {confidence.grounded ? "YES ✓" : "NO"}
-              </strong>
-            </p>
+          <div
+            style={{
+              padding: "22px",
+              background: "#091321",
+              borderRadius: "10px",
+              color: "#71869d"
+            }}
+          >
+            Ask a question to get an AI answer.
           </div>
-        </>
+
+        )}
+
+      </section>
+
+
+      {/* SOURCES */}
+      {sources.length > 0 && (
+
+        <section
+          style={{
+            background: "#111c2d",
+            border: "1px solid #263b54",
+            borderRadius: "16px",
+            padding: "28px"
+          }}
+        >
+
+          <div
+            style={{
+              color: "#69d9d5",
+              fontSize: "11px",
+              fontWeight: "700",
+              letterSpacing: "2px"
+            }}
+          >
+            EVIDENCE
+          </div>
+
+          <h2 style={{ color: "#e8f2ff" }}>
+            Supporting Sources
+          </h2>
+
+          {sources.map((source, index) => {
+
+            const text =
+              typeof source === "string"
+                ? source
+                : source?.filename ||
+                  source?.source ||
+                  source?.file ||
+                  JSON.stringify(source);
+
+            return (
+              <div
+                key={index}
+                style={{
+                  padding: "14px",
+                  marginTop: "10px",
+                  background: "#091321",
+                  border: "1px solid #263b54",
+                  borderRadius: "9px",
+                  color: "#cbd9e8"
+                }}
+              >
+                {text}
+              </div>
+            );
+
+          })}
+
+        </section>
+
       )}
-    </>
+
+    </div>
   );
 }
-

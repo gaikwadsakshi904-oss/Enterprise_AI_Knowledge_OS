@@ -1,4 +1,5 @@
-﻿from document_job_api import router as document_job_router
+﻿from employee_workspace_api import router as employee_workspace_router
+from document_job_api import router as document_job_router
 from typing import List
 
 from job_api import router as job_router
@@ -590,4 +591,7 @@ app.include_router(job_router)
 
 
 app.include_router(document_job_router)
+
+app.include_router(employee_workspace_router)
+
 
