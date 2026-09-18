@@ -5,6 +5,7 @@ import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import Investigation from "./pages/Investigation";
+import WorkCenter from "./pages/WorkCenter";
 import Report from "./pages/Report";
 
 function Guard({ children }) {
@@ -63,6 +64,11 @@ export default function App() {
                 />
 
                 <Route
+                    path="/work"
+                    element={<WorkCenter />}
+                />
+
+                <Route
                     path="/report"
                     element={<Report />}
                 />
@@ -77,7 +83,8 @@ export default function App() {
                     }
                 />
             </Route>
-
-        </Routes>
+</Routes>
     );
 }
+
+

@@ -17,6 +17,11 @@ const navigation = [
         icon: "⌕",
     },
     {
+        path: "/work",
+        label: "My Work",
+        icon: "✓",
+    },
+    {
         path: "/report",
         label: "Reports",
         icon: "▤",
@@ -149,3 +154,4 @@ export default function Layout() {
         </div>
     );
 }
+

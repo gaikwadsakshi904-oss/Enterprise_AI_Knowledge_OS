@@ -3,7 +3,8 @@ from document_job_api import router as document_job_router
 from typing import List
 
 from job_api import router as job_router
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
+from work_management_api import router as work_management_router, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -594,4 +595,7 @@ app.include_router(document_job_router)
 
 app.include_router(employee_workspace_router)
 
+
+
+app.include_router(work_management_router)
 

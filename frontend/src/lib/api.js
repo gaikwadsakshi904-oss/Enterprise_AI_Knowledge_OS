@@ -356,3 +356,60 @@ const api = {
 
 
 export default api;
+
+export const workManagement = {
+  async getProjects() {
+    const res = await fetch(`${API_BASE}/api/work/projects`);
+    if (!res.ok) throw new Error("Failed to load projects");
+    return res.json();
+  },
+
+  async createProject(data) {
+    const res = await fetch(`${API_BASE}/api/work/projects`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error("Failed to create project");
+    return res.json();
+  },
+
+  async getTasks(employee) {
+    const url = employee
+      ? `${API_BASE}/api/work/tasks?employee=${encodeURIComponent(employee)}`
+      : `${API_BASE}/api/work/tasks`;
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to load tasks");
+    return res.json();
+  },
+
+  async createTask(data) {
+    const res = await fetch(`${API_BASE}/api/work/tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error("Failed to create task");
+    return res.json();
+  },
+
+  async updateTaskStatus(taskId, status, progress) {
+    const res = await fetch(`${API_BASE}/api/work/tasks/${taskId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, progress })
+    });
+    if (!res.ok) throw new Error("Failed to update task");
+    return res.json();
+  },
+
+  async getEmployeeWork(employee) {
+    const res = await fetch(
+      `${API_BASE}/api/work/employee/${encodeURIComponent(employee)}`
+    );
+    if (!res.ok) throw new Error("Failed to load employee work");
+    return res.json();
+  }
+};
+
