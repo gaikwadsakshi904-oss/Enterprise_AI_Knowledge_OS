@@ -1,0 +1,600 @@
+﻿import React, { useEffect, useMemo, useState } from "react";
+import { workManagement } from "../lib/api";
+
+export default function WorkCenter() {
+  const employee =
+    localStorage.getItem("eakos_name") ||
+    "Employee";
+
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showProject, setShowProject] = useState(false);
+  const [showTask, setShowTask] = useState(false);
+
+  const [project, setProject] = useState({
+    name: "",
+    description: "",
+    department: "AI Engineering",
+    manager: employee,
+    priority: "HIGH",
+    status: "IN_PROGRESS",
+    team_members: []
+  });
+
+  const [task, setTask] = useState({
+    project_id: "",
+    title: "",
+    description: "",
+    assigned_to: "",
+    assigned_by: employee,
+    priority: "MEDIUM",
+    status: "TODO",
+    estimated_hours: 4
+  });
+
+  async function load() {
+    try {
+      setLoading(true);
+
+      const [p, t] = await Promise.all([
+        workManagement.getProjects(),
+        workManagement.getTasks(employee)
+      ]);
+
+      setProjects(p);
+      setTasks(t);
+
+      if (!task.project_id && p.length) {
+        setTask(x => ({ ...x, project_id: p[0].id }));
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function createProject(e) {
+    e.preventDefault();
+
+    await workManagement.createProject(project);
+
+    setProject({
+      name: "",
+      description: "",
+      department: "AI Engineering",
+      manager: employee,
+      priority: "HIGH",
+      status: "IN_PROGRESS",
+      team_members: []
+    });
+
+    setShowProject(false);
+    load();
+  }
+
+  async function createTask(e) {
+    e.preventDefault();
+
+    await workManagement.createTask(task);
+
+    setTask(x => ({
+      ...x,
+      title: "",
+      description: ""
+    }));
+
+    setShowTask(false);
+    load();
+  }
+
+  async function updateStatus(id, status) {
+    const progress =
+      status === "COMPLETED"
+        ? 100
+        : status === "IN_PROGRESS"
+          ? 50
+          : 0;
+
+    await workManagement.updateTaskStatus(
+      id,
+      status,
+      progress
+    );
+
+    load();
+  }
+
+  const stats = useMemo(() => ({
+    total: tasks.length,
+    active: tasks.filter(t => t.status !== "COMPLETED").length,
+    completed: tasks.filter(t => t.status === "COMPLETED").length,
+    high: tasks.filter(t => t.priority === "HIGH").length
+  }), [tasks]);
+
+  if (loading) {
+    return (
+      <div className="page-shell">
+        <div className="panel">
+          <h2>Loading Work Center...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-shell">
+
+      <div className="page-header">
+        <div>
+          <div className="eyebrow">EMPLOYEE INTELLIGENCE OS</div>
+          <h1>Work Center</h1>
+          <p>
+            Turn company intelligence into assigned,
+            trackable execution.
+          </p>
+        </div>
+
+        <div className="action-row">
+          <button
+            className="secondary-btn"
+            onClick={() => setShowProject(true)}
+          >
+            + New Project
+          </button>
+
+          <button
+            className="primary-btn"
+            onClick={() => setShowTask(true)}
+          >
+            + Assign Work
+          </button>
+        </div>
+      </div>
+
+      <div className="stats-grid">
+
+        <div className="stat-card">
+          <span>Total Work</span>
+          <strong>{stats.total}</strong>
+          <small>Assigned to you</small>
+        </div>
+
+        <div className="stat-card">
+          <span>Active</span>
+          <strong>{stats.active}</strong>
+          <small>Requires execution</small>
+        </div>
+
+        <div className="stat-card">
+          <span>Completed</span>
+          <strong>{stats.completed}</strong>
+          <small>Delivered work</small>
+        </div>
+
+        <div className="stat-card">
+          <span>High Priority</span>
+          <strong>{stats.high}</strong>
+          <small>Needs attention</small>
+        </div>
+
+      </div>
+
+      <div className="workspace-grid">
+
+        <section className="panel">
+
+          <div className="panel-heading">
+            <div>
+              <h2>My Work</h2>
+              <p>Execution queue for {employee}</p>
+            </div>
+          </div>
+
+          {tasks.length === 0 ? (
+            <div className="empty-state">
+              <h3>No work assigned yet</h3>
+              <p>
+                Create a project and assign the first
+                employee work item.
+              </p>
+            </div>
+          ) : (
+            <div className="task-list">
+
+              {tasks.map(t => (
+
+                <div className="task-card" key={t.id}>
+
+                  <div className="task-main">
+
+                    <div className="task-title-row">
+                      <h3>{t.title}</h3>
+
+                      <span className={
+                        `status-pill ${String(t.status).toLowerCase()}`
+                      }>
+                        {String(t.status).replace("_", " ")}
+                      </span>
+                    </div>
+
+                    <p>{t.description || "No description provided."}</p>
+
+                    <div className="task-meta">
+                      <span>{t.priority} priority</span>
+                      <span>Assigned to {t.assigned_to}</span>
+                      <span>{t.estimated_hours || 0}h estimated</span>
+                      {t.due_date && (
+                        <span>Due {t.due_date}</span>
+                      )}
+                    </div>
+
+                    <div className="progress-track">
+                      <div
+                        className="progress-fill"
+                        style={{
+                          width: `${t.progress || 0}%`
+                        }}
+                      />
+                    </div>
+
+                  </div>
+
+                  <div className="task-actions">
+
+                    {t.status !== "IN_PROGRESS" &&
+                      t.status !== "COMPLETED" && (
+                        <button
+                          onClick={() =>
+                            updateStatus(
+                              t.id,
+                              "IN_PROGRESS"
+                            )
+                          }
+                        >
+                          Start
+                        </button>
+                      )}
+
+                    {t.status === "IN_PROGRESS" && (
+                      <button
+                        onClick={() =>
+                          updateStatus(
+                            t.id,
+                            "COMPLETED"
+                          )
+                        }
+                      >
+                        Complete
+                      </button>
+                    )}
+
+                  </div>
+
+                </div>
+
+              ))}
+
+            </div>
+          )}
+
+        </section>
+
+        <section className="panel">
+
+          <div className="panel-heading">
+            <div>
+              <h2>Active Projects</h2>
+              <p>Company execution context</p>
+            </div>
+          </div>
+
+          {projects.length === 0 ? (
+            <div className="empty-state">
+              <h3>No projects yet</h3>
+              <p>Create the first company project.</p>
+            </div>
+          ) : (
+            <div className="project-list">
+
+              {projects.map(p => (
+
+                <div className="project-card" key={p.id}>
+
+                  <div className="project-top">
+                    <div>
+                      <span className="project-code">
+                        {p.id}
+                      </span>
+
+                      <h3>{p.name}</h3>
+                    </div>
+
+                    <span className="status-pill">
+                      {String(p.status).replace("_", " ")}
+                    </span>
+                  </div>
+
+                  <p>{p.description}</p>
+
+                  <div className="project-meta">
+                    <span>{p.department}</span>
+                    <span>{p.priority} priority</span>
+                    <span>
+                      {p.task_count || 0} tasks
+                    </span>
+                    <span>
+                      {(p.team_members || []).length} members
+                    </span>
+                  </div>
+
+                  {(p.team_members || []).length > 0 && (
+                    <div style={{
+                      marginTop: "10px",
+                      fontSize: "11px",
+                      opacity: .55
+                    }}>
+                      Team: {p.team_members.join(", ")}
+                    </div>
+                  )}
+
+                  <div className="progress-track">
+                    <div
+                      className="progress-fill"
+                      style={{
+                        width: `${p.progress || 0}%`
+                      }}
+                    />
+                  </div>
+
+                  <small>
+                    {p.progress || 0}% complete
+                  </small>
+
+                </div>
+
+              ))}
+
+            </div>
+          )}
+
+        </section>
+
+      </div>
+
+      {showProject && (
+        <div className="modal-backdrop">
+          <form
+            className="modal-card"
+            onSubmit={createProject}
+          >
+            <h2>Create Project</h2>
+
+            <input
+              placeholder="Project name"
+              value={project.name}
+              onChange={e =>
+                setProject({
+                  ...project,
+                  name: e.target.value
+                })
+              }
+              required
+            />
+
+            <textarea
+              placeholder="Project description"
+              value={project.description}
+              onChange={e =>
+                setProject({
+                  ...project,
+                  description: e.target.value
+                })
+              }
+            />
+
+            <input
+              placeholder="Department"
+              value={project.department}
+              onChange={e =>
+                setProject({
+                  ...project,
+                  department: e.target.value
+                })
+              }
+            />
+
+            <input
+              placeholder="Team members (comma separated)"
+              value={project.team_members.join(", ")}
+              onChange={e =>
+                setProject({
+                  ...project,
+                  team_members: e.target.value
+                    .split(",")
+                    .map(x => x.trim())
+                    .filter(Boolean)
+                })
+              }
+            />
+
+            <small style={{
+              display: "block",
+              opacity: .55,
+              margin: "4px 0 10px"
+            }}>
+              Example: Sakshi, Rahul, Priya
+            </small>
+
+            <select
+              value={project.priority}
+              onChange={e =>
+                setProject({
+                  ...project,
+                  priority: e.target.value
+                })
+              }
+            >
+              <option>LOW</option>
+              <option>MEDIUM</option>
+              <option>HIGH</option>
+              <option>CRITICAL</option>
+            </select>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setShowProject(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="primary-btn"
+                type="submit"
+              >
+                Create Project
+              </button>
+            </div>
+
+          </form>
+        </div>
+      )}
+
+      {showTask && (
+        <div className="modal-backdrop">
+          <form
+            className="modal-card"
+            onSubmit={createTask}
+          >
+            <h2>Assign Work</h2>
+
+            <select
+              value={task.project_id}
+              onChange={e =>
+                setTask({
+                  ...task,
+                  project_id: e.target.value
+                })
+              }
+              required
+            >
+              <option value="">
+                Select project
+              </option>
+
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+
+            </select>
+
+            <input
+              placeholder="Task title"
+              value={task.title}
+              onChange={e =>
+                setTask({
+                  ...task,
+                  title: e.target.value
+                })
+              }
+              required
+            />
+
+            <textarea
+              placeholder="What needs to be done?"
+              value={task.description}
+              onChange={e =>
+                setTask({
+                  ...task,
+                  description: e.target.value
+                })
+              }
+            />
+
+            <input
+              placeholder="Assign to employee"
+              value={task.assigned_to}
+              onChange={e =>
+                setTask({
+                  ...task,
+                  assigned_to: e.target.value
+                })
+              }
+              required
+            />
+
+            <small style={{
+              display: "block",
+              opacity: .55,
+              margin: "2px 0 10px"
+            }}>
+              Enter any employee name. Tasks are not restricted
+              to the person currently logged in.
+            </small>
+
+            <select
+              value={task.priority}
+              onChange={e =>
+                setTask({
+                  ...task,
+                  priority: e.target.value
+                })
+              }
+            >
+              <option>LOW</option>
+              <option>MEDIUM</option>
+              <option>HIGH</option>
+              <option>CRITICAL</option>
+            </select>
+
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              placeholder="Estimated hours"
+              value={task.estimated_hours}
+              onChange={e =>
+                setTask({
+                  ...task,
+                  estimated_hours: Number(e.target.value)
+                })
+              }
+            />
+
+            <div className="modal-actions">
+
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setShowTask(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="primary-btn"
+                type="submit"
+              >
+                Assign Work
+              </button>
+
+            </div>
+
+          </form>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+
