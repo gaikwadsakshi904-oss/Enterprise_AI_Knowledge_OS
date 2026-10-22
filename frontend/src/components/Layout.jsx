@@ -26,6 +26,11 @@ const navigation = [
         label: "Reports",
         icon: "▤",
     },
+    {
+        path: "/security-offboarding",
+        label: "Security Offboarding",
+        icon: "🔐",
+    },
 ];
 
 export default function Layout() {
@@ -154,4 +159,5 @@ export default function Layout() {
         </div>
     );
 }
+
 

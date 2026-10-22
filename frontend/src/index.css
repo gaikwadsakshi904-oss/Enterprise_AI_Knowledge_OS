@@ -1936,3 +1936,125 @@
   }
 }
 
+
+/* EAKOS Security Offboarding — Dark Theme Fix */
+.security-page {
+  color: #e2eaf5;
+}
+
+.security-page .security-header h1,
+.security-page .security-header p,
+.security-page .security-card h2,
+.security-page .security-card label {
+  color: #e2eaf5;
+  opacity: 1;
+}
+
+.security-page .security-eyebrow {
+  color: #5eead4;
+}
+
+.security-page .security-card {
+  background: #0e1b2b !important;
+  color: #dbe7f5;
+  border: 1px solid #263b52;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.security-page .security-card p {
+  color: #a9bbd0;
+  opacity: 1;
+}
+
+.security-page .security-card input,
+.security-page .security-card textarea {
+  background: #091422;
+  color: #f1f5f9;
+  border: 1px solid #344960;
+}
+
+.security-page .security-card input::placeholder,
+.security-page .security-card textarea::placeholder {
+  color: #8fa2b8;
+}
+
+.security-page .security-card input:focus,
+.security-page .security-card textarea:focus {
+  border-color: #5eead4;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.14);
+}
+
+.security-page .security-card button {
+  background: #176b57;
+  color: #ffffff;
+}
+
+.security-page .security-card button:hover:not(:disabled) {
+  background: #21836a;
+}
+
+.security-page .security-card small {
+  color: #a9bbd0;
+}
+
+.security-page .security-card a {
+  color: #5eead4;
+}
+
+
+/* Fix remaining white surfaces on Security & Offboarding */
+.security-page .security-card input,
+.security-page .security-card textarea {
+  background-color: #091422 !important;
+  color: #e6eef9 !important;
+  color-scheme: dark;
+}
+
+.security-page .security-card input:-webkit-autofill,
+.security-page .security-card input:-webkit-autofill:hover,
+.security-page .security-card input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e6eef9;
+  box-shadow: 0 0 0 1000px #091422 inset;
+}
+
+.security-page .security-result,
+.security-page .status-result,
+.security-page .status-output,
+.security-page .result-card {
+  background: #0b1928 !important;
+  color: #e6eef9 !important;
+  border: 1px solid #263b52;
+}
+
+.security-page .security-result *,
+.security-page .status-result *,
+.security-page .status-output *,
+.security-page .result-card * {
+  color: #e6eef9 !important;
+}
+
+.security-page table {
+  background: #0e1b2b !important;
+  color: #e6eef9 !important;
+}
+
+.security-page thead,
+.security-page thead tr,
+.security-page th {
+  background: #17283b !important;
+  color: #e6eef9 !important;
+}
+
+.security-page tbody tr,
+.security-page td {
+  background: #0e1b2b !important;
+  color: #c7d6e8 !important;
+  border-color: #263b52 !important;
+}
+
+.security-page tbody tr:nth-child(even) td {
+  background: #122236 !important;
+}
+
