@@ -1,0 +1,234 @@
+﻿========== ASK QUESTION ENDPOINT ==========
+
+# ============================================================
+# ASK QUESTION
+# ============================================================
+
+@app.post(
+    "/api/ask",
+    response_model=QuestionResponse,
+)
+def ask_question(
+    request: QuestionRequest,
+):
+
+    if pipeline is None:
+
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "RAG pipeline is not ready. "
+                "Check backend startup logs."
+            ),
+        )
+
+    try:
+
+        # ====================================================
+        # USE THE COMPLETE RAG PIPELINE
+        # ====================================================
+
+        results = pipeline.retrieve(
+            request.question,
+            top_k=request.top_k,
+        )
+
+        # ====================================================
+        # CONFIDENCE
+        # ====================================================
+
+        confidence = (
+            pipeline.confidence_engine.calculate(
+                results
+            )
+        )
+
+        # ====================================================
+        # NO EVIDENCE
+        # ====================================================
+
+        if not results:
+
+            return QuestionResponse(
+
+                question=request.question,
+
+                answer=(
+                    "I could not find relevant "
+                    "information in the knowledge base."
+                ),
+
+                sources=[],
+
+                confidence=confidence,
+            )
+
+        # ====================================================
+        # LOW CONFIDENCE
+        # ====================================================
+
+        if not confidence["grounded"]:
+
+            sources = []
+
+            for result in results:
+
+                sources.append(
+                    Source(
+
+                        document=result.get(
+                            "document",
+                            "Unknown",
+                        ),
+
+                        page=result.get(
+                            "page"
+                        ),
+
+                        score=float(
+                            result.get(
+                                "score",
+                                0.0,
+
+========== RESEARCH ENDPOINT ==========
+
+@app.on_event("startup")
+def startup_agent():
+    global agent_orchestrator
+
+    if pipeline is not None:
+        agent_orchestrator = AgentOrchestrator(pipeline)
+        print("Agent Orchestrator ready.")
+
+
+@app.post("/api/agent/research")
+def research_agent_endpoint(request: AgentRequest):
+
+    if pipeline is None:
+        raise HTTPException(
+            status_code=503,
+            detail="RAG pipeline is not ready."
+        )
+
+    try:
+
+        global agent_orchestrator
+
+        if agent_orchestrator is None:
+            agent_orchestrator = AgentOrchestrator(
+                pipeline
+            )
+
+        result = agent_orchestrator.run(
+            request.objective,
+            employee=request.employee
+        )
+
+        return result
+
+    except Exception as error:
+
+        print("=" * 60)
+        print("AGENT ERROR")
+        print(error); import traceback; traceback.print_exc()
+        print("=" * 60)
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(error)
+        )
+
+@app.get("/api/agent/history")
+def get_agent_history():
+
+    try:
+
+        history = investigation_memory.latest(
+            limit=50
+        )
+
+        return {
+            "count": len(history),
+            "history": history,
+        }
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(error)
+        )
+
+
+@app.get("/api/agent/history/{investigation_id}")
+def get_agent_investigation(
+    investigation_id: int
+):
+
+    try:
+
+========== DOCUMENT API ==========
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, UploadFile, File, HTTPException
+
+from config import DOCUMENTS_DIR
+from document_loader import load_file, chunk_text
+from embedding import EmbeddingService
+
+
+router = APIRouter(
+    prefix="/api/documents",
+    tags=["Documents"],
+)
+
+ALLOWED_EXTENSIONS = {
+    ".pdf",
+    ".txt",
+    ".docx",
+}
+
+
+embedding_service = EmbeddingService()
+
+
+def get_pipeline():
+    from app import pipeline
+    return pipeline
+
+
+
+
+
+========== WORK MANAGEMENT ROUTES ==========
+
+> backend\work_management_api.py:83:@router.get("/projects")
+  backend\work_management_api.py:84:def get_projects():
+  backend\work_management_api.py:85:    projects = load_json(PROJECTS_FILE, [])
+> backend\work_management_api.py:110:@router.post("/projects")
+  backend\work_management_api.py:111:def create_project(project: ProjectCreate):
+  backend\work_management_api.py:112:    projects = load_json(PROJECTS_FILE, [])
+> backend\work_management_api.py:129:@router.get("/projects/{project_id}")
+  backend\work_management_api.py:130:def get_project(project_id: str):
+  backend\work_management_api.py:131:    projects = load_json(PROJECTS_FILE, [])
+> backend\work_management_api.py:150:@router.get("/tasks")
+  backend\work_management_api.py:151:def get_tasks(
+  backend\work_management_api.py:152:    employee: Optional[str] = None,
+> backend\work_management_api.py:180:@router.post("/tasks")
+  backend\work_management_api.py:181:def create_task(task: TaskCreate):
+  backend\work_management_api.py:182:    projects = load_json(PROJECTS_FILE, [])
+> backend\work_management_api.py:206:@router.put("/tasks/{task_id}")
+  backend\work_management_api.py:207:def update_task(task_id: str, update: TaskUpdate):
+  backend\work_management_api.py:208:    tasks = load_json(TASKS_FILE, [])
+> backend\work_management_api.py:231:@router.post("/tasks/{task_id}/status")
+  backend\work_management_api.py:232:def update_status(task_id: str, update: StatusUpdate):
+  backend\work_management_api.py:233:    tasks = load_json(TASKS_FILE, [])
+> backend\work_management_api.py:255:@router.post("/tasks/{task_id}/comment")
+  backend\work_management_api.py:256:def add_comment(task_id: str, comment: CommentCreate):
+  backend\work_management_api.py:257:    tasks = load_json(TASKS_FILE, [])
+> backend\work_management_api.py:281:@router.get("/employee/{employee}")
+  backend\work_management_api.py:282:def employee_work(employee: str):
+  backend\work_management_api.py:283:    tasks = load_json(TASKS_FILE, [])
+
+

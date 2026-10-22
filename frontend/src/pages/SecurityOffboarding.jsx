@@ -18,7 +18,7 @@ export default function SecurityOffboarding() {
     const headers = { ...(options.headers || {}) };
 
     if (options.body) headers["Content-Type"] = "application/json";
-    if (needsAdmin) headers["x-admin-key"] = adminKey;
+    if (needsAdmin) headers["x-admin-key"] = adminKey.trim();
 
     const response = await fetch(`${API_BASE}${path}`, {
       ...options,
@@ -236,4 +236,5 @@ export default function SecurityOffboarding() {
     </main>
   );
 }
+
 

@@ -1,0 +1,238 @@
+﻿import { useState } from "react";
+
+const API_BASE =
+  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+export default function SecurityOffboarding() {
+  const [adminKey, setAdminKey] = useState("");
+  const [employeeId, setEmployeeId] = useState("");
+  const [reason, setReason] = useState("Employment ended");
+  const [lookupId, setLookupId] = useState("");
+  const [status, setStatus] = useState(null);
+  const [audit, setAudit] = useState([]);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function request(path, options = {}, needsAdmin = false) {
+    const headers = { ...(options.headers || {}) };
+
+    if (options.body) headers["Content-Type"] = "application/json";
+    if (needsAdmin) headers["x-admin-key"] = adminKey;
+
+    const response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(data.detail || `Request failed (${response.status})`);
+    }
+    return data;
+  }
+
+  async function run(action) {
+    setBusy(true);
+    setMessage("");
+    setError("");
+
+    try {
+      await action();
+    } catch (err) {
+      setError(err.message || "Request failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function deactivate(e) {
+    e.preventDefault();
+
+    if (!window.confirm(`Deactivate employee ${employeeId.trim()}?`)) return;
+
+    run(async () => {
+      const data = await request(
+        "/security/offboarding/deactivate",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            employee_id: employeeId.trim(),
+            reason: reason.trim() || "Employment ended",
+          }),
+        },
+        true
+      );
+
+      setMessage(
+        `${data.employee_id}: ${data.status}. ` +
+        "This records offboarding; it does not yet revoke main-app access."
+      );
+      setLookupId(employeeId.trim());
+    });
+  }
+
+  function checkStatus() {
+    run(async () => {
+      const data = await request(
+        `/security/offboarding/status/${encodeURIComponent(lookupId.trim())}`
+      );
+      setStatus(data);
+      setMessage("Employee status loaded.");
+    });
+  }
+
+  function loadAudit() {
+    run(async () => {
+      const data = await request(
+        "/security/offboarding/audit",
+        {},
+        true
+      );
+      setAudit(data.audit_log || []);
+      setMessage(`Loaded ${(data.audit_log || []).length} audit records.`);
+    });
+  }
+
+  return (
+    <main className="security-page">
+      <header className="security-header">
+        <div>
+          <p className="security-eyebrow">ACCESS GOVERNANCE</p>
+          <h1>Security &amp; Offboarding</h1>
+          <p>Record employee departures and review the audit trail.</p>
+        </div>
+        <span className="security-status">Prototype</span>
+      </header>
+
+      {message && <div className="security-notice">{message}</div>}
+      {error && <div className="security-error" role="alert">{error}</div>}
+
+      <section className="security-card">
+        <h2>Administrator authorization</h2>
+        <p>Enter the configured offboarding admin key for this session.</p>
+        <label htmlFor="admin-key">Admin key</label>
+        <input
+          id="admin-key"
+          type="password"
+          autoComplete="off"
+          value={adminKey}
+          onChange={(e) => setAdminKey(e.target.value)}
+          placeholder="Enter admin key"
+        />
+        <p className="security-hint">
+          The key stays in page memory and is not saved to localStorage.
+          Use HTTPS and a proper administrator login before production.
+        </p>
+      </section>
+
+      <div className="security-grid">
+        <section className="security-card">
+          <h2>Deactivate employee</h2>
+          <form onSubmit={deactivate}>
+            <label htmlFor="employee-id">Employee ID</label>
+            <input
+              id="employee-id"
+              value={employeeId}
+              onChange={(e) => setEmployeeId(e.target.value)}
+              maxLength={100}
+              required
+              placeholder="e.g. EMP001"
+            />
+
+            <label htmlFor="offboard-reason">Reason</label>
+            <textarea
+              id="offboard-reason"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={500}
+              rows={3}
+            />
+
+            <button disabled={busy || !adminKey.trim()} type="submit">
+              {busy ? "Please wait..." : "Deactivate employee"}
+            </button>
+          </form>
+        </section>
+
+        <section className="security-card">
+          <h2>Employee status</h2>
+          <label htmlFor="lookup-id">Employee ID to check</label>
+          <input
+            id="lookup-id"
+            value={lookupId}
+            onChange={(e) => setLookupId(e.target.value)}
+            placeholder="e.g. EMP001"
+          />
+          <button
+            disabled={busy || !lookupId.trim()}
+            onClick={checkStatus}
+            type="button"
+          >
+            Check status
+          </button>
+
+          {status && (
+            <div className="security-result">
+              <strong>{status.employee_id}</strong>
+              <span>Status: {status.status}</span>
+              {status.updated_at && <small>Updated: {status.updated_at}</small>}
+            </div>
+          )}
+        </section>
+      </div>
+
+      <section className="security-card">
+        <div className="security-audit-heading">
+          <div>
+            <h2>Audit history</h2>
+            <p>Most recent records returned by the backend.</p>
+          </div>
+          <button
+            type="button"
+            disabled={busy || !adminKey.trim()}
+            onClick={loadAudit}
+          >
+            Load audit log
+          </button>
+        </div>
+
+        <div className="security-table-wrap">
+          <table className="security-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Action</th>
+                <th>Performed by</th>
+                <th>Timestamp</th>
+                <th>Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              {audit.length === 0 ? (
+                <tr>
+                  <td colSpan="5">No audit records loaded.</td>
+                </tr>
+              ) : audit.map((item, index) => (
+                <tr key={`${item.employee_id}-${item.timestamp}-${index}`}>
+                  <td>{item.employee_id}</td>
+                  <td>{item.action}</td>
+                  <td>{item.performed_by}</td>
+                  <td>{item.timestamp}</td>
+                  <td>{item.reason || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <p className="security-warning">
+        Important: recording a terminated status does not yet block access
+        to the main EAKOS APIs. The status endpoint also needs administrator
+        protection before production deployment.
+      </p>
+    </main>
+  );
+}

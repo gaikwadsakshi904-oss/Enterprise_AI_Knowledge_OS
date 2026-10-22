@@ -20,3 +20,9 @@ npx.ps1
 corepack
 corepack.cmd
 install_tools.bat
+.env.*
+!.env.example
+.venv/
+*.py[cod]
+*.sqlite3
+*.db
