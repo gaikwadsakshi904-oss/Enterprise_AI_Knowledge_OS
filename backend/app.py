@@ -1,4 +1,6 @@
-﻿from employee_workspace_api import router as employee_workspace_router
+﻿
+from security_module.employee_offboarding import router as offboarding_router
+from employee_workspace_api import router as employee_workspace_router
 from document_job_api import router as document_job_router
 from typing import List
 
@@ -598,4 +600,9 @@ app.include_router(employee_workspace_router)
 
 
 app.include_router(work_management_router)
+
+
+
+# Employee offboarding security routes
+app.include_router(offboarding_router)
 

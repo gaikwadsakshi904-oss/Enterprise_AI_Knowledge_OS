@@ -7,6 +7,7 @@ import KnowledgeBase from "./pages/KnowledgeBase";
 import Investigation from "./pages/Investigation";
 import WorkCenter from "./pages/WorkCenter";
 import Report from "./pages/Report";
+import SecurityOffboarding from "./pages/SecurityOffboarding";
 
 function Guard({ children }) {
     const authenticated =
@@ -74,6 +75,11 @@ export default function App() {
                 />
 
                 <Route
+                    path="/security-offboarding"
+                    element={<SecurityOffboarding />}
+                />
+
+                <Route
                     path="*"
                     element={
                         <Navigate
@@ -86,5 +92,6 @@ export default function App() {
 </Routes>
     );
 }
+
 
 

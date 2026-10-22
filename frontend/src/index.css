@@ -1674,3 +1674,265 @@
     color: #ffffff !important;
 }
 
+
+/* ================================
+   SECURITY & OFFBOARDING
+================================ */
+
+.security-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px;
+  color: var(--text, #24312d);
+}
+
+.security-header,
+.security-audit-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.security-header h1 {
+  margin: 4px 0 8px;
+  font-size: 30px;
+  letter-spacing: -0.7px;
+}
+
+.security-header p,
+.security-card p {
+  opacity: 0.75;
+}
+
+.security-eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #397455;
+}
+
+.security-status {
+  border: 1px solid #d9b878;
+  border-radius: 20px;
+  padding: 7px 12px;
+  background: #fff9eb;
+  color: #815b1c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.security-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 18px 0;
+}
+
+.security-card {
+  min-width: 0;
+  padding: 24px;
+  margin-top: 18px;
+  border: 1px solid #e0e7e2;
+  border-radius: 16px;
+  background: var(--card-bg, #ffffff);
+  box-shadow: 0 5px 20px rgba(30, 55, 40, 0.05);
+}
+
+.security-card h2 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.security-card label {
+  display: block;
+  margin: 16px 0 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.security-card input,
+.security-card textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid #d5ded8;
+  border-radius: 9px;
+  outline: none;
+  background: #ffffff;
+  color: #24312d;
+  font: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.security-card input:focus,
+.security-card textarea:focus {
+  border-color: #55916c;
+  box-shadow: 0 0 0 3px rgba(85, 145, 108, 0.13);
+}
+
+.security-card textarea {
+  resize: vertical;
+}
+
+.security-card button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 17px;
+  border: none;
+  border-radius: 9px;
+  background: #397455;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.security-card button:hover:not(:disabled) {
+  background: #2c6045;
+  transform: translateY(-1px);
+}
+
+.security-card button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.security-notice,
+.security-error {
+  padding: 13px 16px;
+  margin-top: 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.security-notice {
+  border: 1px solid #cce8d2;
+  background: #edf7ef;
+  color: #245b38;
+}
+
+.security-error {
+  border: 1px solid #f0c9c2;
+  background: #fff0ed;
+  color: #9c3024;
+}
+
+.security-hint,
+.security-warning {
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.security-hint {
+  margin-top: 12px;
+  color: #69766e;
+}
+
+.security-result {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 15px;
+  border: 1px solid #e0e9e2;
+  border-radius: 10px;
+  background: #f2f6f3;
+  overflow-wrap: anywhere;
+}
+
+.security-result strong {
+  font-size: 15px;
+}
+
+.security-result span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.security-result small {
+  color: #69766e;
+  overflow-wrap: anywhere;
+}
+
+.security-audit-heading p {
+  margin-bottom: 0;
+}
+
+.security-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 18px;
+}
+
+.security-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.security-table th,
+.security-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid #e5ebe6;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.security-table th {
+  background: #f5f8f5;
+  color: #43554a;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.security-table tbody tr:hover {
+  background: #f8faf8;
+}
+
+.security-warning {
+  margin: 18px 0;
+  padding: 14px 16px;
+  border-left: 3px solid #d9b878;
+  border-radius: 5px;
+  background: #fff9eb;
+  color: #715526;
+}
+
+@media (max-width: 760px) {
+  .security-page {
+    padding: 16px;
+  }
+
+  .security-header h1 {
+    font-size: 24px;
+  }
+
+  .security-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .security-card {
+    padding: 17px;
+  }
+
+  .security-audit-heading {
+    align-items: flex-start;
+  }
+
+  .security-card button {
+    max-width: 100%;
+  }
+}
+

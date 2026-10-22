@@ -202,6 +202,15 @@ Return ONLY valid JSON:
             [],
         ):
 
+            if isinstance(gap, str):
+                gap = {
+                    "title": gap,
+                    "description": gap,
+                    "importance": "Medium",
+                }
+            elif not isinstance(gap, dict):
+                continue
+
             importance = str(
                 gap.get("importance", "Medium")
             ).upper()
@@ -283,3 +292,4 @@ Return ONLY valid JSON:
                 ),
                 "error": str(error),
             }
+
